@@ -8,12 +8,16 @@ repos:
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: debug-statements
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-case-conflict
 
   - repo: https://github.com/psf/black
     rev: 23.12.1
     hooks:
       - id: black
         language_version: python3
+        args: [--line-length=88]
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.1.9
@@ -25,5 +29,30 @@ repos:
     rev: v1.8.0
     hooks:
       - id: mypy
-        additional_dependencies: [types-PyYAML]
+        additional_dependencies: [types-PyYAML, types-requests]
         files: ^src/
+        args: [--ignore-missing-imports]
+
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: [-r, src/, -f, json]
+        exclude: tests/
+
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.5.0
+    hooks:
+      - id: interrogate
+        args: [--config=pyproject.toml, src/]
+
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: pytest-check
+        entry: pytest
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true
+        args: [--cov=src/tokamak_rl, --cov-report=term-missing, -q]
