@@ -1,0 +1,133 @@
+version: '3.8'
+
+services:
+  # Development environment with hot reloading
+  tokamak-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: tokamak-rl-dev
+    volumes:
+      - .:/workspace
+      - tokamak-venv:/home/tokamak/.local
+      - pre-commit-cache:/home/tokamak/.cache/pre-commit
+    ports:
+      - "8888:8888"  # Jupyter
+      - "6006:6006"  # TensorBoard
+    environment:
+      - PYTHONPATH=/workspace/src
+      - TOKAMAK_RL_DEBUG=1
+    command: >
+      bash -c "
+        echo 'Starting Tokamak RL Development Environment...' &&
+        jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
+      "
+    stdin_open: true
+    tty: true
+
+  # Production-ready environment
+  tokamak-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: tokamak-rl-prod
+    environment:
+      - PYTHONPATH=/app/src
+    command: ["python", "-c", "import tokamak_rl; print(f'Tokamak RL v{tokamak_rl.__version__} ready')"]
+    restart: unless-stopped
+
+  # Documentation server
+  tokamak-docs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: docs
+    container_name: tokamak-rl-docs
+    ports:
+      - "8000:8000"  # Documentation server
+    volumes:
+      - ./docs:/docs/docs:ro
+    command: ["python", "-m", "http.server", "8000", "--directory", "/docs/docs/_build/html/"]
+
+  # Testing environment for CI/CD
+  tokamak-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: tokamak-rl-test
+    volumes:
+      - .:/workspace
+      - test-reports:/workspace/test-reports
+    environment:
+      - PYTHONPATH=/workspace/src
+      - PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+    command: >
+      bash -c "
+        echo 'Running comprehensive test suite...' &&
+        python -m pytest tests/ \
+          --cov=src/tokamak_rl \
+          --cov-report=html:/workspace/test-reports/coverage \
+          --cov-report=xml:/workspace/test-reports/coverage.xml \
+          --junitxml=/workspace/test-reports/junit.xml \
+          --verbose \
+          --tb=short &&
+        echo 'Running security checks...' &&
+        python -m bandit -r src/ -f json -o /workspace/test-reports/bandit.json &&
+        echo 'Running linting...' &&
+        python -m ruff check src/ tests/ --output-format=json > /workspace/test-reports/ruff.json &&
+        echo 'Running type checking...' &&
+        python -m mypy src/tokamak_rl --junit-xml /workspace/test-reports/mypy.xml &&
+        echo 'All checks completed successfully!'
+      "
+
+  # Performance benchmarking environment
+  tokamak-bench:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: tokamak-rl-bench
+    volumes:
+      - .:/workspace
+      - benchmark-results:/workspace/benchmark-results
+    environment:
+      - PYTHONPATH=/workspace/src
+    command: >
+      bash -c "
+        echo 'Running performance benchmarks...' &&
+        python -m pytest tests/performance/ \
+          --benchmark-only \
+          --benchmark-json=/workspace/benchmark-results/benchmark.json \
+          --benchmark-html=/workspace/benchmark-results/benchmark.html \
+          --verbose &&
+        echo 'Benchmark results saved to benchmark-results/'
+      "
+
+  # TensorBoard for training visualization
+  tensorboard:
+    image: tensorflow/tensorflow:latest
+    container_name: tokamak-tensorboard
+    ports:
+      - "6006:6006"
+    volumes:
+      - ./tensorboard_logs:/logs
+    command: tensorboard --logdir=/logs --host=0.0.0.0 --port=6006
+    depends_on:
+      - tokamak-dev
+
+volumes:
+  tokamak-venv:
+    driver: local
+  pre-commit-cache:
+    driver: local
+  test-reports:
+    driver: local
+  benchmark-results:
+    driver: local
+
+networks:
+  default:
+    name: tokamak-rl-network
