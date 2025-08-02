@@ -106,6 +106,40 @@ services:
         echo 'Benchmark results saved to benchmark-results/'
       "
 
+  # GPU-enabled development environment
+  tokamak-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: tokamak-rl-gpu
+    volumes:
+      - .:/workspace
+      - tokamak-venv:/home/tokamak/.local
+      - gpu-cache:/home/tokamak/.cache
+    ports:
+      - "8889:8888"  # Jupyter (different port)
+      - "6007:6006"  # TensorBoard (different port)
+    environment:
+      - PYTHONPATH=/workspace/src
+      - CUDA_VISIBLE_DEVICES=0
+      - TORCH_CUDA_ARCH_LIST="6.0 6.1 7.0 7.5 8.0 8.6"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: >
+      bash -c "
+        echo 'Starting GPU-enabled Tokamak RL Environment...' &&
+        python -c 'import torch; print(f\"CUDA available: {torch.cuda.is_available()}\")'  &&
+        jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+      "
+    profiles:
+      - gpu
+
   # TensorBoard for training visualization
   tensorboard:
     image: tensorflow/tensorflow:latest
@@ -113,10 +147,33 @@ services:
     ports:
       - "6006:6006"
     volumes:
-      - ./tensorboard_logs:/logs
-    command: tensorboard --logdir=/logs --host=0.0.0.0 --port=6006
-    depends_on:
-      - tokamak-dev
+      - ./outputs/tensorboard:/logs
+      - ./outputs/logs:/logs/training
+    command: tensorboard --logdir=/logs --host=0.0.0.0 --port=6006 --reload_interval=30
+    restart: unless-stopped
+
+  # Monitoring and metrics collection
+  monitoring:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: tokamak-monitoring
+    volumes:
+      - .:/workspace
+      - monitoring-data:/workspace/monitoring-data
+    environment:
+      - PYTHONPATH=/workspace/src
+      - MONITORING_INTERVAL=10
+    ports:
+      - "8080:8080"  # Monitoring dashboard
+    command: >
+      bash -c "
+        echo 'Starting monitoring dashboard...' &&
+        python -m tokamak_rl.monitoring.dashboard --host=0.0.0.0 --port=8080
+      "
+    profiles:
+      - monitoring
 
 volumes:
   tokamak-venv:
@@ -126,6 +183,10 @@ volumes:
   test-reports:
     driver: local
   benchmark-results:
+    driver: local
+  gpu-cache:
+    driver: local
+  monitoring-data:
     driver: local
 
 networks:

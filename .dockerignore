@@ -1,0 +1,247 @@
+# Docker ignore file for tokamak-rl-control-suite
+# Excludes files and directories that shouldn't be included in Docker builds
+
+# Git
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.conda/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Testing
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+htmlcov/
+
+# Documentation
+docs/_build/
+docs/build/
+_build/
+.sphinx/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Environments
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# Large files and outputs
+outputs/
+logs/
+runs/
+checkpoints/
+models/*.pt
+models/*.pth
+models/*.pkl
+*.model
+*.weights
+
+# Data files
+data/experimental/
+data/cache/
+*.hdf5
+*.h5
+*.netcdf
+*.nc
+
+# TensorBoard logs
+tensorboard_logs/
+tb_logs/
+
+# Training artifacts
+wandb/
+mlruns/
+mlartifacts/
+ray_results/
+
+# Cache directories
+.cache/
+*.cache/
+__pycache__/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# Temporary files
+*.tmp
+*.temp
+temp_*/
+tmp/
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Compressed files
+*.tar.gz
+*.zip
+*.7z
+
+# Security
+*.pem
+*.key
+*.crt
+secrets/
+credentials/
+.secrets
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# README and documentation (keep essential ones)
+!README.md
+!CONTRIBUTING.md
+!LICENSE
+
+# Configuration files that should be included
+!pyproject.toml
+!setup.py
+!setup.cfg
+
+# Keep essential configs
+!.editorconfig
+!.pre-commit-config.yaml
+
+# Exclude development tools
+.pre-commit-hooks.yaml
+.github/
+
+# Node modules (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local development
+local_config.*
+custom_config.*
+override_config.*
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Logs
+*.log
+
+# Profiling
+*.prof
+*.profile
+profile_*.txt
+
+# Video files
+*.mp4
+*.avi
+*.mov
+
+# Large scientific data
+*.nc
+*.hdf5
+*.h5
+
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Package files
+*.deb
+*.rpm
+*.msi
+
+# Archive files
+*.tar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.zip
+*.rar
+*.7z
+
+# Lock files
+poetry.lock
+Pipfile.lock
+package-lock.json
+yarn.lock

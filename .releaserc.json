@@ -1,0 +1,174 @@
+{
+  "branches": [
+    "main",
+    {
+      "name": "develop",
+      "prerelease": "beta"
+    },
+    {
+      "name": "alpha",
+      "prerelease": true
+    }
+  ],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md"
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "python scripts/update_version.py ${nextRelease.version}",
+        "publishCmd": "python scripts/build_and_publish.py ${nextRelease.version}"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "dist/*.tar.gz",
+            "label": "Source distribution"
+          },
+          {
+            "path": "dist/*.whl", 
+            "label": "Python wheel"
+          },
+          {
+            "path": "build-report-*.json",
+            "label": "Build report"
+          }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "CHANGELOG.md",
+          "src/tokamak_rl/__init__.py",
+          "pyproject.toml"
+        ],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ]
+  ],
+  "preset": "conventionalcommits",
+  "presetConfig": {
+    "types": [
+      {
+        "type": "feat",
+        "section": "Features"
+      },
+      {
+        "type": "fix", 
+        "section": "Bug Fixes"
+      },
+      {
+        "type": "docs",
+        "section": "Documentation"
+      },
+      {
+        "type": "style",
+        "section": "Code Style"
+      },
+      {
+        "type": "refactor",
+        "section": "Code Refactoring"
+      },
+      {
+        "type": "perf",
+        "section": "Performance Improvements"
+      },
+      {
+        "type": "test",
+        "section": "Tests"
+      },
+      {
+        "type": "build",
+        "section": "Build System"
+      },
+      {
+        "type": "ci",
+        "section": "Continuous Integration"
+      },
+      {
+        "type": "chore",
+        "hidden": true
+      }
+    ]
+  },
+  "analyzeCommits": {
+    "preset": "conventionalcommits",
+    "releaseRules": [
+      {
+        "type": "feat",
+        "release": "minor"
+      },
+      {
+        "type": "fix",
+        "release": "patch"
+      },
+      {
+        "type": "perf", 
+        "release": "patch"
+      },
+      {
+        "type": "docs",
+        "scope": "README",
+        "release": "patch"
+      },
+      {
+        "breaking": true,
+        "release": "major"
+      },
+      {
+        "type": "refactor",
+        "release": "patch"
+      }
+    ]
+  },
+  "generateNotes": {
+    "preset": "conventionalcommits",
+    "presetConfig": {
+      "types": [
+        {
+          "type": "feat",
+          "section": "🚀 Features"
+        },
+        {
+          "type": "fix",
+          "section": "🐛 Bug Fixes"
+        },
+        {
+          "type": "docs",
+          "section": "📚 Documentation"
+        },
+        {
+          "type": "perf",
+          "section": "⚡ Performance Improvements"
+        },
+        {
+          "type": "refactor",
+          "section": "♻️ Code Refactoring"
+        },
+        {
+          "type": "test",
+          "section": "🧪 Tests"
+        },
+        {
+          "type": "build",
+          "section": "🏗️ Build System"
+        },
+        {
+          "type": "ci",
+          "section": "👷 CI/CD"
+        }
+      ]
+    }
+  }
+}
