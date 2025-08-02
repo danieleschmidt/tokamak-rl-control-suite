@@ -1,0 +1,89 @@
+{
+    "name": "tokamak-rl-control-suite",
+    "image": "mcr.microsoft.com/devcontainers/python:3.11-bullseye",
+    
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "18"
+        }
+    },
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.black-formatter",
+                "ms-python.mypy-type-checker",
+                "charliermarsh.ruff",
+                "ms-python.pylint",
+                "njpwerner.autodocstring",
+                "ms-toolsai.jupyter",
+                "ms-toolsai.tensorboard",
+                "GitHub.copilot",
+                "GitHub.copilot-chat",
+                "tamasfe.even-better-toml",
+                "redhat.vscode-yaml",
+                "yzhang.markdown-all-in-one",
+                "DavidAnson.vscode-markdownlint",
+                "streetsidesoftware.code-spell-checker"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.formatting.provider": "black",
+                "python.linting.enabled": true,
+                "python.linting.ruffEnabled": true,
+                "python.linting.mypyEnabled": true,
+                "python.linting.pylintEnabled": false,
+                "python.testing.pytestEnabled": true,
+                "python.testing.unittestEnabled": false,
+                "editor.formatOnSave": true,
+                "editor.codeActionsOnSave": {
+                    "source.organizeImports": true,
+                    "source.fixAll.ruff": true
+                },
+                "files.associations": {
+                    "*.toml": "toml",
+                    "*.yaml": "yaml",
+                    "*.yml": "yaml"
+                },
+                "terminal.integrated.shell.linux": "/bin/bash"
+            }
+        }
+    },
+
+    "forwardPorts": [
+        6006,
+        8888
+    ],
+    "portsAttributes": {
+        "6006": {
+            "label": "TensorBoard",
+            "onAutoForward": "openPreview"
+        },
+        "8888": {
+            "label": "Jupyter Lab",
+            "onAutoForward": "openPreview"
+        }
+    },
+
+    "postCreateCommand": "pip install -e '.[dev,docs]' && pre-commit install",
+    
+    "remoteUser": "vscode",
+    "containerUser": "vscode",
+    
+    "mounts": [
+        "source=${localWorkspaceFolder}/.git,target=/workspace/.git,type=bind,consistency=cached"
+    ],
+
+    "runArgs": [
+        "--gpus=all"
+    ],
+
+    "containerEnv": {
+        "PYTHONPATH": "/workspaces/tokamak-rl-control-suite/src",
+        "CUDA_VISIBLE_DEVICES": "0"
+    }
+}

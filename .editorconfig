@@ -1,21 +1,49 @@
+# EditorConfig configuration for tokamak-rl-control-suite
+# https://editorconfig.org/
+
 root = true
 
 [*]
 charset = utf-8
 end_of_line = lf
-indent_style = space
-indent_size = 4
 insert_final_newline = true
 trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
 
-[*.{yml,yaml}]
+[*.{py,pyx}]
+indent_size = 4
+max_line_length = 88
+
+[*.{js,ts,jsx,tsx}]
 indent_size = 2
 
-[*.md]
+[*.{json,jsonc,yaml,yml}]
+indent_size = 2
+
+[*.{html,xml}]
+indent_size = 2
+
+[*.{css,scss,sass}]
+indent_size = 2
+
+[*.{md,rst}]
 trim_trailing_whitespace = false
+max_line_length = 100
 
-[*.{json,jsonc}]
-indent_size = 2
+[*.{toml,ini,cfg}]
+indent_size = 4
 
 [Makefile]
 indent_style = tab
+indent_size = 4
+
+[*.{sh,bash}]
+indent_size = 2
+
+[.github/workflows/*.{yml,yaml}]
+indent_size = 2
+
+[docs/**.{md,rst}]
+trim_trailing_whitespace = false
+max_line_length = 120

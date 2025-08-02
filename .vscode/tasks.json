@@ -1,0 +1,133 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "install-dev",
+            "type": "shell",
+            "command": "pip",
+            "args": ["install", "-e", ".[dev,docs]"],
+            "group": "build",
+            "detail": "Install package in development mode with all dependencies"
+        },
+        {
+            "label": "test",
+            "type": "shell",
+            "command": "pytest",
+            "args": ["tests/", "-v", "--cov=src", "--cov-report=html"],
+            "group": "test",
+            "detail": "Run all tests with coverage"
+        },
+        {
+            "label": "test-fast",
+            "type": "shell",
+            "command": "pytest",
+            "args": ["tests/", "-x", "--ff"],
+            "group": "test",
+            "detail": "Run tests with fail-fast and failed-first"
+        },
+        {
+            "label": "lint",
+            "type": "shell",
+            "command": "ruff",
+            "args": ["check", "src/", "tests/"],
+            "group": "build",
+            "detail": "Run linting with ruff"
+        },
+        {
+            "label": "format",
+            "type": "shell",
+            "command": "black",
+            "args": ["src/", "tests/"],
+            "group": "build",
+            "detail": "Format code with black"
+        },
+        {
+            "label": "format-check",
+            "type": "shell",
+            "command": "black",
+            "args": ["--check", "src/", "tests/"],
+            "group": "build",
+            "detail": "Check code formatting"
+        },
+        {
+            "label": "typecheck",
+            "type": "shell",
+            "command": "mypy",
+            "args": ["src/"],
+            "group": "build",
+            "detail": "Run type checking with mypy"
+        },
+        {
+            "label": "pre-commit",
+            "type": "shell",
+            "command": "pre-commit",
+            "args": ["run", "--all-files"],
+            "group": "build",
+            "detail": "Run all pre-commit hooks"
+        },
+        {
+            "label": "security-check",
+            "type": "shell",
+            "command": "bandit",
+            "args": ["-r", "src/"],
+            "group": "build",
+            "detail": "Run security checks with bandit"
+        },
+        {
+            "label": "docs-build",
+            "type": "shell",
+            "command": "sphinx-build",
+            "args": ["-b", "html", "docs/", "docs/_build/html"],
+            "group": "build",
+            "detail": "Build documentation"
+        },
+        {
+            "label": "docs-serve",
+            "type": "shell",
+            "command": "python",
+            "args": ["-m", "http.server", "8080", "--directory", "docs/_build/html"],
+            "group": "build",
+            "detail": "Serve documentation locally"
+        },
+        {
+            "label": "train-example",
+            "type": "shell",
+            "command": "python",
+            "args": ["-m", "tokamak_rl.examples.train_sac"],
+            "group": "build",
+            "detail": "Run example SAC training"
+        },
+        {
+            "label": "tensorboard",
+            "type": "shell",
+            "command": "tensorboard",
+            "args": ["--logdir", "outputs/tensorboard", "--port", "6006"],
+            "group": "build",
+            "detail": "Launch TensorBoard"
+        },
+        {
+            "label": "jupyter",
+            "type": "shell",
+            "command": "jupyter",
+            "args": ["lab", "--port", "8888", "--ip", "0.0.0.0"],
+            "group": "build",
+            "detail": "Launch Jupyter Lab"
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "rm",
+            "args": ["-rf", "build/", "dist/", "*.egg-info/", "__pycache__/", ".pytest_cache/", ".coverage", "htmlcov/"],
+            "group": "build",
+            "detail": "Clean build artifacts"
+        },
+        {
+            "label": "build-package",
+            "type": "shell",
+            "command": "python",
+            "args": ["-m", "build"],
+            "group": "build",
+            "detail": "Build package distribution"
+        }
+    ]
+}

@@ -205,3 +205,105 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ============================================
+# TOKAMAK-RL-SPECIFIC IGNORES
+# ============================================
+
+# Training outputs
+outputs/
+runs/
+logs/
+checkpoints/
+models/*.pt
+models/*.pth
+models/*.pkl
+
+# Data files
+data/experimental/
+data/cache/
+*.hdf5
+*.h5
+*.netcdf
+*.nc
+
+# TensorBoard logs
+tensorboard_logs/
+tb_logs/
+
+# Physics simulation cache
+physics_cache/
+equilibrium_cache/
+
+# Video recordings
+videos/
+*.mp4
+*.avi
+*.mov
+
+# Profiling outputs
+profile_*.prof
+*.prof
+profiling/
+
+# Temporary simulation files
+temp_equilibrium_*
+temp_plasma_*
+*.tmp
+
+# MLflow tracking
+mlruns/
+mlartifacts/
+
+# Weights & Biases
+wandb/
+
+# Ray distributed training
+ray_results/
+
+# Large model files (use Git LFS instead)
+*.model
+*.weights
+*.bin
+
+# IDE configurations (keep some for consistency)
+.vscode/settings.json
+.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Compressed files
+*.tar.gz
+*.zip
+*.7z
+
+# Documentation build
+docs/_build/
+docs/build/
+_build/
+
+# Custom configurations
+local_config.yaml
+local_settings.py
+custom_tokamak_*.yaml
+
+# Security-sensitive files
+secrets.yaml
+credentials.json
+*.key
+*.pem
+*.crt
