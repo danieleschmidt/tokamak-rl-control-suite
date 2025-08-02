@@ -1,0 +1,415 @@
+# CI Workflow Template - tokamak-rl-control-suite
+# This file should be placed at .github/workflows/ci.yml
+
+name: CI - Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.8'
+  NODE_VERSION: '18'
+
+jobs:
+  # Security and vulnerability scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Scanning
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Bandit security linter
+        run: |
+          pip install bandit[toml]
+          bandit -r src/ -f json -o bandit-report.json || true
+
+      - name: Upload security scan results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-scan-results
+          path: |
+            trivy-results.sarif
+            bandit-report.json
+
+  # Code quality and linting
+  code-quality:
+    runs-on: ubuntu-latest
+    name: Code Quality
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,test]"
+
+      - name: Run pre-commit hooks
+        uses: pre-commit/action@v3.0.0
+
+      - name: Run Black code formatter check
+        run: black --check --diff src/ tests/
+
+      - name: Run isort import sorting check
+        run: isort --check-only --diff src/ tests/
+
+      - name: Run flake8 linting
+        run: flake8 src/ tests/
+
+      - name: Run mypy type checking
+        run: mypy src/
+
+      - name: Run pylint
+        run: pylint src/ --output-format=json > pylint-report.json || true
+
+      - name: Upload code quality reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: code-quality-reports
+          path: |
+            pylint-report.json
+
+  # Unit and integration testing
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+    name: Test (Python ${{ matrix.python-version }})
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-py${{ matrix.python-version }}-pip-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-py${{ matrix.python-version }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,test]"
+
+      - name: Run unit tests
+        run: |
+          pytest tests/unit/ \
+            --cov=src/ \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term \
+            --junitxml=pytest-unit.xml \
+            -v
+
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/ \
+            --junitxml=pytest-integration.xml \
+            -v
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: |
+            pytest-*.xml
+            htmlcov/
+            coverage.xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        if: matrix.python-version == '3.8'
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+  # GPU-accelerated testing (if GPU runners available)
+  gpu-test:
+    runs-on: [self-hosted, gpu]
+    name: GPU Testing
+    if: contains(github.event.pull_request.labels.*.name, 'gpu-test') || github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,test,gpu]"
+
+      - name: Check GPU availability
+        run: |
+          nvidia-smi
+          python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
+
+      - name: Run GPU-specific tests
+        run: |
+          pytest tests/gpu/ \
+            --junitxml=pytest-gpu.xml \
+            -v
+
+      - name: Upload GPU test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: gpu-test-results
+          path: pytest-gpu.xml
+
+  # Performance and benchmarking
+  performance:
+    runs-on: ubuntu-latest
+    name: Performance Testing
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,test]"
+
+      - name: Run performance benchmarks
+        run: |
+          pytest tests/performance/ \
+            --benchmark-json=benchmark-results.json \
+            --benchmark-compare-fail=min:5% \
+            -v
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'pytest'
+          output-file-path: benchmark-results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          comment-on-alert: true
+          alert-threshold: '200%'
+          fail-on-alert: true
+
+  # Container security scanning
+  container-scan:
+    runs-on: ubuntu-latest
+    name: Container Security
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t tokamak-rl-control:${{ github.sha }} .
+
+      - name: Run Trivy container scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'tokamak-rl-control:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-container.sarif'
+
+      - name: Upload container scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-container.sarif'
+
+      - name: Run Snyk container scan
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: 'tokamak-rl-control:${{ github.sha }}'
+          args: --severity-threshold=medium
+
+  # Documentation testing
+  docs:
+    runs-on: ubuntu-latest
+    name: Documentation
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install documentation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[docs]"
+
+      - name: Build documentation
+        run: |
+          cd docs/
+          make html
+
+      - name: Test documentation links
+        run: |
+          cd docs/
+          make linkcheck
+
+      - name: Upload documentation
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: docs/_build/html/
+
+  # Dependency security checking
+  dependency-check:
+    runs-on: ubuntu-latest
+    name: Dependency Security
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety pip-audit
+
+      - name: Run Safety check
+        run: |
+          safety check --json --output safety-report.json || true
+
+      - name: Run pip-audit
+        run: |
+          pip-audit --format=json --output=pip-audit-report.json || true
+
+      - name: Upload dependency security reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: dependency-security-reports
+          path: |
+            safety-report.json
+            pip-audit-report.json
+
+  # License compliance checking
+  license-check:
+    runs-on: ubuntu-latest
+    name: License Compliance
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-licenses licensecheck
+
+      - name: Check licenses
+        run: |
+          pip-licenses --format=json --output-file=license-report.json
+          licensecheck --zero
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v3
+        with:
+          name: license-report
+          path: license-report.json
+
+  # Final status check
+  ci-success:
+    runs-on: ubuntu-latest
+    name: CI Success
+    needs: [
+      security-scan,
+      code-quality,
+      test,
+      performance,
+      container-scan,
+      docs,
+      dependency-check,
+      license-check
+    ]
+    if: always()
+    steps:
+      - name: Check all jobs success
+        run: |
+          echo "All CI jobs completed"
+          if [[ "${{ needs.security-scan.result }}" != "success" ]] || \
+             [[ "${{ needs.code-quality.result }}" != "success" ]] || \
+             [[ "${{ needs.test.result }}" != "success" ]] || \
+             [[ "${{ needs.performance.result }}" != "success" ]] || \
+             [[ "${{ needs.container-scan.result }}" != "success" ]] || \
+             [[ "${{ needs.docs.result }}" != "success" ]] || \
+             [[ "${{ needs.dependency-check.result }}" != "success" ]] || \
+             [[ "${{ needs.license-check.result }}" != "success" ]]; then
+            echo "One or more CI jobs failed"
+            exit 1
+          fi
+          echo "All CI jobs passed successfully"
+
+      - name: Post success notification
+        if: success()
+        run: |
+          echo "✅ CI pipeline passed successfully for ${{ github.ref }}"
+
+      - name: Post failure notification
+        if: failure()
+        run: |
+          echo "❌ CI pipeline failed for ${{ github.ref }}"

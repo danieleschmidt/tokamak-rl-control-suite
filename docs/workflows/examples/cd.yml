@@ -1,0 +1,462 @@
+# CD Workflow Template - tokamak-rl-control-suite
+# This file should be placed at .github/workflows/cd.yml
+
+name: CD - Continuous Deployment
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      force_deploy:
+        description: 'Force deployment (skip safety checks)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  PYTHON_VERSION: '3.8'
+
+jobs:
+  # Determine deployment strategy
+  deployment-strategy:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.strategy.outputs.environment }}
+      image_tag: ${{ steps.strategy.outputs.image_tag }}
+      deploy_type: ${{ steps.strategy.outputs.deploy_type }}
+    steps:
+      - name: Determine deployment strategy
+        id: strategy
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+            echo "deploy_type=manual" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "deploy_type=release" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "deploy_type=automatic" >> $GITHUB_OUTPUT
+          fi
+          
+          # Generate image tag
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "image_tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "image_tag=main-${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
+  # Pre-deployment validation
+  pre-deployment:
+    runs-on: ubuntu-latest
+    needs: deployment-strategy
+    environment: ${{ needs.deployment-strategy.outputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate deployment prerequisites
+        run: |
+          echo "Validating deployment to ${{ needs.deployment-strategy.outputs.environment }}"
+          
+          # Check if this is a safe deployment
+          if [[ "${{ needs.deployment-strategy.outputs.environment }}" == "production" ]] && \
+             [[ "${{ github.event.inputs.force_deploy }}" != "true" ]]; then
+            # Additional production safety checks
+            echo "Running production safety checks..."
+            
+            # Check if there are any critical security alerts
+            # Check if monitoring systems are healthy
+            # Validate database migrations
+            # etc.
+          fi
+
+      - name: Check deployment health
+        run: |
+          # Verify target environment is healthy before deployment
+          echo "Checking target environment health..."
+
+  # Build and push container image
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [deployment-strategy, pre-deployment]
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ needs.deployment-strategy.outputs.image_tag }}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.meta.outputs.tags }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom-${{ needs.deployment-strategy.outputs.image_tag }}
+          path: sbom.spdx.json
+
+  # Security scanning of built image
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deployment-strategy]
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ needs.build-and-push.outputs.image }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Check for critical vulnerabilities
+        run: |
+          # Fail deployment if critical vulnerabilities found
+          trivy image --severity CRITICAL --exit-code 1 ${{ needs.build-and-push.outputs.image }}
+
+  # Deploy to staging environment
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [deployment-strategy, build-and-push, security-scan]
+    if: needs.deployment-strategy.outputs.environment == 'staging' || needs.deployment-strategy.outputs.environment == 'production'
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging
+        run: |
+          echo "Deploying ${{ needs.build-and-push.outputs.image }} to staging"
+          
+          # Update Kubernetes manifests
+          # Apply database migrations
+          # Deploy using Helm or kubectl
+          # Update configuration
+          
+          # Example Kubernetes deployment
+          cat <<EOF > staging-deployment.yaml
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: tokamak-rl-control
+            namespace: staging
+          spec:
+            replicas: 2
+            selector:
+              matchLabels:
+                app: tokamak-rl-control
+            template:
+              metadata:
+                labels:
+                  app: tokamak-rl-control
+              spec:
+                containers:
+                - name: tokamak-rl-control
+                  image: ${{ needs.build-and-push.outputs.image }}
+                  ports:
+                  - containerPort: 8080
+                  env:
+                  - name: ENVIRONMENT
+                    value: "staging"
+                  resources:
+                    requests:
+                      memory: "1Gi"
+                      cpu: "500m"
+                    limits:
+                      memory: "2Gi"
+                      cpu: "1000m"
+          EOF
+          
+          # kubectl apply -f staging-deployment.yaml
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for staging deployment to be ready..."
+          # kubectl rollout status deployment/tokamak-rl-control -n staging --timeout=300s
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests against staging..."
+          # Run basic health checks and smoke tests
+          # curl -f https://staging-api.tokamak.internal/health
+
+  # Integration testing in staging
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: needs.deployment-strategy.outputs.environment == 'staging' || needs.deployment-strategy.outputs.environment == 'production'
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+
+      - name: Run integration tests
+        env:
+          TEST_ENVIRONMENT: staging
+          API_BASE_URL: https://staging-api.tokamak.internal
+        run: |
+          pytest tests/e2e/ \
+            --junitxml=pytest-e2e-staging.xml \
+            -v
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: integration-test-results-staging
+          path: pytest-e2e-staging.xml
+
+  # Production deployment
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [deployment-strategy, build-and-push, security-scan, integration-tests]
+    if: needs.deployment-strategy.outputs.environment == 'production' && (needs.integration-tests.result == 'success' || needs.integration-tests.result == 'skipped')
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Production deployment approval
+        uses: trstringer/manual-approval@v1
+        if: needs.deployment-strategy.outputs.deploy_type != 'automatic'
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: ${{ vars.PRODUCTION_APPROVERS }}
+          minimum-approvals: 2
+          issue-title: "Production Deployment Approval: ${{ needs.deployment-strategy.outputs.image_tag }}"
+          issue-body: |
+            Please review and approve the production deployment.
+            
+            **Image:** ${{ needs.build-and-push.outputs.image }}
+            **Tag:** ${{ needs.deployment-strategy.outputs.image_tag }}
+            **Commit:** ${{ github.sha }}
+            
+            **Pre-deployment checklist:**
+            - [ ] Security scan passed
+            - [ ] Staging tests passed
+            - [ ] Database migrations reviewed
+            - [ ] Rollback plan confirmed
+            - [ ] Monitoring alerts configured
+
+      - name: Deploy to production
+        run: |
+          echo "Deploying ${{ needs.build-and-push.outputs.image }} to production"
+          
+          # Production deployment with blue-green or canary strategy
+          # Update load balancer configuration
+          # Apply database migrations
+          # Update monitoring configuration
+          
+          # Example production deployment
+          cat <<EOF > production-deployment.yaml
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: tokamak-rl-control
+            namespace: production
+          spec:
+            replicas: 5
+            strategy:
+              type: RollingUpdate
+              rollingUpdate:
+                maxSurge: 1
+                maxUnavailable: 0
+            selector:
+              matchLabels:
+                app: tokamak-rl-control
+            template:
+              metadata:
+                labels:
+                  app: tokamak-rl-control
+              spec:
+                containers:
+                - name: tokamak-rl-control
+                  image: ${{ needs.build-and-push.outputs.image }}
+                  ports:
+                  - containerPort: 8080
+                  env:
+                  - name: ENVIRONMENT
+                    value: "production"
+                  resources:
+                    requests:
+                      memory: "2Gi"
+                      cpu: "1000m"
+                    limits:
+                      memory: "4Gi"
+                      cpu: "2000m"
+                  livenessProbe:
+                    httpGet:
+                      path: /health/live
+                      port: 8080
+                    initialDelaySeconds: 30
+                    periodSeconds: 10
+                  readinessProbe:
+                    httpGet:
+                      path: /health/ready
+                      port: 8080
+                    initialDelaySeconds: 5
+                    periodSeconds: 5
+          EOF
+          
+          # kubectl apply -f production-deployment.yaml
+
+      - name: Wait for production deployment
+        run: |
+          echo "Waiting for production deployment to be ready..."
+          # kubectl rollout status deployment/tokamak-rl-control -n production --timeout=600s
+
+      - name: Production smoke tests
+        run: |
+          echo "Running production smoke tests..."
+          # Run critical path tests against production
+          # curl -f https://api.tokamak.internal/health
+
+  # Post-deployment monitoring
+  post-deployment:
+    runs-on: ubuntu-latest
+    needs: [deployment-strategy, deploy-staging, deploy-production]
+    if: always() && (needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success')
+    steps:
+      - name: Setup monitoring
+        run: |
+          echo "Setting up post-deployment monitoring..."
+          
+          # Configure monitoring alerts for new deployment
+          # Update dashboards with new version info
+          # Set up canary analysis if applicable
+
+      - name: Monitor deployment health
+        run: |
+          echo "Monitoring deployment health for 10 minutes..."
+          
+          # Monitor key metrics for initial period
+          # Check error rates, response times, resource usage
+          # Alert if any issues detected
+          
+          for i in {1..10}; do
+            echo "Health check $i/10..."
+            # curl -f https://api.tokamak.internal/health
+            sleep 60
+          done
+
+      - name: Update deployment status
+        run: |
+          echo "Deployment completed successfully"
+          
+          # Update deployment tracking system
+          # Send notifications to stakeholders
+          # Update documentation if needed
+
+  # Rollback capability
+  rollback:
+    runs-on: ubuntu-latest
+    if: failure() && github.event_name != 'workflow_dispatch'
+    needs: [deployment-strategy, deploy-production]
+    environment: production
+    steps:
+      - name: Automatic rollback
+        run: |
+          echo "Initiating automatic rollback..."
+          
+          # Get previous successful deployment
+          # PREVIOUS_IMAGE=$(kubectl get deployment tokamak-rl-control -n production -o jsonpath='{.metadata.annotations.deployment\.kubernetes\.io/revision}')
+          
+          # Rollback to previous version
+          # kubectl rollout undo deployment/tokamak-rl-control -n production
+          
+          echo "Rollback completed"
+
+      - name: Post-rollback verification
+        run: |
+          echo "Verifying rollback success..."
+          # kubectl rollout status deployment/tokamak-rl-control -n production
+          # Run health checks
+
+  # Cleanup and notifications
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: [deployment-strategy, post-deployment]
+    if: always()
+    steps:
+      - name: Cleanup old images
+        run: |
+          echo "Cleaning up old container images..."
+          # Remove old images from registry (keep last 10 versions)
+
+      - name: Send deployment notifications
+        if: needs.deployment-strategy.outputs.environment == 'production'
+        run: |
+          echo "Sending deployment notifications..."
+          
+          # Send Slack notification
+          # Update status page
+          # Log deployment in tracking system

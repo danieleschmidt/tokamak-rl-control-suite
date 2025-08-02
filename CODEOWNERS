@@ -1,0 +1,84 @@
+# CODEOWNERS file for tokamak-rl-control-suite
+# This file defines individuals or teams that are responsible for code in this repository.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners - required for all files unless more specific rules apply
+* @plasma-team @rl-team
+
+# Core source code
+/src/ @rl-team @physics-team
+/src/tokamak_rl/environment.py @physics-team
+/src/tokamak_rl/safety/ @safety-team @physics-team
+/src/tokamak_rl/models/ @rl-team
+/src/tokamak_rl/training/ @rl-team
+
+# Configuration and infrastructure
+/pyproject.toml @devops-team
+/requirements*.txt @devops-team
+/Dockerfile @devops-team
+/docker-compose.yml @devops-team
+/Makefile @devops-team
+
+# Documentation
+/README.md @documentation-team
+/docs/ @documentation-team
+/ARCHITECTURE.md @architecture-team
+/PROJECT_CHARTER.md @project-leads
+
+# Safety and security critical files
+/SECURITY.md @security-team
+/src/tokamak_rl/safety/ @safety-team @physics-team
+/tests/security/ @security-team
+
+# Testing
+/tests/ @qa-team @rl-team
+/tests/unit/ @rl-team
+/tests/integration/ @qa-team
+/tests/e2e/ @qa-team
+/tests/performance/ @performance-team
+/pytest.ini @qa-team
+
+# CI/CD and workflows
+/.github/ @devops-team
+/.github/workflows/ @devops-team @security-team
+/.pre-commit-config.yaml @devops-team
+/scripts/ @devops-team
+
+# Monitoring and observability
+/docs/monitoring/ @sre-team
+/scripts/metrics/ @sre-team
+/.github/project-metrics.json @sre-team
+
+# Development environment
+/.devcontainer/ @devops-team
+/.vscode/ @devops-team
+/.editorconfig @devops-team
+/.gitignore @devops-team
+
+# Legal and compliance
+/LICENSE @legal-team
+/CODE_OF_CONDUCT.md @legal-team @hr-team
+/CONTRIBUTING.md @project-leads
+
+# ADRs (Architecture Decision Records)
+/docs/adr/ @architecture-team @project-leads
+
+# Deployment and operations
+/docs/deployment.md @sre-team @devops-team
+/docs/runbooks/ @sre-team
+
+# Backup and disaster recovery
+/scripts/backup/ @sre-team
+/docs/disaster-recovery.md @sre-team
+
+# Performance and benchmarking
+/tests/performance/ @performance-team
+/benchmarks/ @performance-team
+
+# Data and models
+/data/ @data-team @physics-team
+/models/ @rl-team @physics-team
+
+# Examples and tutorials
+/examples/ @documentation-team @rl-team
+/tutorials/ @documentation-team @education-team
