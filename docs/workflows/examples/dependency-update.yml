@@ -1,0 +1,488 @@
+# Dependency Update Workflow Template - tokamak-rl-control-suite
+# This file should be placed at .github/workflows/dependency-update.yml
+
+name: Dependency Updates
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Monday at 6 AM UTC
+    - cron: '0 6 1 * *'  # Monthly on the 1st at 6 AM UTC for major updates
+  workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Type of updates to perform'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - all
+      create_pr:
+        description: 'Create pull request for updates'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.8'
+
+jobs:
+  # Analyze current dependencies
+  dependency-analysis:
+    runs-on: ubuntu-latest
+    outputs:
+      has_updates: ${{ steps.check.outputs.has_updates }}
+      update_summary: ${{ steps.check.outputs.update_summary }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install analysis tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit safety pip-check-updates pipenv-to-requirements
+
+      - name: Analyze current dependencies
+        id: check
+        run: |
+          echo "Analyzing current dependencies..."
+          
+          # Check for available updates
+          pip list --outdated --format=json > outdated-packages.json
+          
+          # Security vulnerability check
+          safety check --json --output security-issues.json || true
+          pip-audit --format=json --output=vulnerability-audit.json || true
+          
+          # Determine if updates are available
+          OUTDATED_COUNT=$(cat outdated-packages.json | jq length)
+          SECURITY_COUNT=$(cat security-issues.json | jq '.vulnerabilities | length' 2>/dev/null || echo "0")
+          
+          if [[ $OUTDATED_COUNT -gt 0 ]] || [[ $SECURITY_COUNT -gt 0 ]]; then
+            echo "has_updates=true" >> $GITHUB_OUTPUT
+            echo "update_summary=Found $OUTDATED_COUNT outdated packages and $SECURITY_COUNT security issues" >> $GITHUB_OUTPUT
+          else
+            echo "has_updates=false" >> $GITHUB_OUTPUT
+            echo "update_summary=All dependencies are up to date" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload dependency analysis
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-analysis
+          path: |
+            outdated-packages.json
+            security-issues.json
+            vulnerability-audit.json
+
+  # Python dependency updates
+  python-updates:
+    runs-on: ubuntu-latest
+    needs: dependency-analysis
+    if: needs.dependency-analysis.outputs.has_updates == 'true'
+    strategy:
+      matrix:
+        update_type: [security, patch, minor, major]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install update tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-tools pur safety pip-audit
+
+      - name: Create update branch
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          BRANCH_NAME="dependency-updates/${{ matrix.update_type }}-$(date +%Y%m%d)"
+          git checkout -b $BRANCH_NAME
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Update dependencies - Security
+        if: matrix.update_type == 'security'
+        run: |
+          echo "Updating dependencies with security vulnerabilities..."
+          
+          # Get list of vulnerable packages
+          pip-audit --format=json --output=vulns.json || true
+          
+          # Extract vulnerable package names
+          VULNERABLE_PACKAGES=$(cat vulns.json | jq -r '.vulnerabilities[].package' | sort -u)
+          
+          if [[ ! -z "$VULNERABLE_PACKAGES" ]]; then
+            echo "Updating vulnerable packages: $VULNERABLE_PACKAGES"
+            
+            # Update each vulnerable package
+            for package in $VULNERABLE_PACKAGES; do
+              echo "Updating $package..."
+              pip install --upgrade $package
+            done
+            
+            # Update requirements files
+            pip freeze > requirements.txt
+            
+            # Update setup.py or pyproject.toml if they exist
+            if [[ -f "setup.py" ]]; then
+              # Update setup.py dependencies (manual process)
+              echo "Manual update required for setup.py"
+            fi
+            
+            if [[ -f "pyproject.toml" ]]; then
+              # Update pyproject.toml dependencies
+              echo "Manual update required for pyproject.toml"
+            fi
+          fi
+
+      - name: Update dependencies - Patch
+        if: matrix.update_type == 'patch'
+        run: |
+          echo "Updating patch-level dependencies..."
+          
+          # Use pur to update to latest patch versions
+          if [[ -f "requirements.txt" ]]; then
+            pur -r requirements.txt --patch
+          fi
+          
+          if [[ -f "requirements-dev.txt" ]]; then
+            pur -r requirements-dev.txt --patch
+          fi
+
+      - name: Update dependencies - Minor
+        if: matrix.update_type == 'minor'
+        run: |
+          echo "Updating minor-level dependencies..."
+          
+          # Use pur to update to latest minor versions
+          if [[ -f "requirements.txt" ]]; then
+            pur -r requirements.txt --minor
+          fi
+          
+          if [[ -f "requirements-dev.txt" ]]; then
+            pur -r requirements-dev.txt --minor
+          fi
+
+      - name: Update dependencies - Major
+        if: matrix.update_type == 'major'
+        run: |
+          echo "Updating major-level dependencies..."
+          
+          # Use pur to update to latest versions (including major)
+          if [[ -f "requirements.txt" ]]; then
+            pur -r requirements.txt
+          fi
+          
+          if [[ -f "requirements-dev.txt" ]]; then
+            pur -r requirements-dev.txt
+          fi
+
+      - name: Install updated dependencies
+        run: |
+          pip install -r requirements.txt
+          if [[ -f "requirements-dev.txt" ]]; then
+            pip install -r requirements-dev.txt
+          fi
+
+      - name: Run security checks on updates
+        run: |
+          echo "Running security checks on updated dependencies..."
+          
+          # Check for new vulnerabilities
+          safety check || true
+          pip-audit || true
+          
+          # Generate updated dependency analysis
+          pip list --outdated --format=json > updated-outdated.json
+          safety check --json --output updated-security.json || true
+
+      - name: Run tests with updated dependencies
+        run: |
+          echo "Running tests with updated dependencies..."
+          
+          # Install test dependencies
+          pip install -e ".[test]"
+          
+          # Run critical tests
+          pytest tests/unit/ -v --tb=short
+          pytest tests/integration/ -v --tb=short -k "not gpu"
+
+      - name: Generate update summary
+        run: |
+          echo "Generating update summary..."
+          
+          cat > update-summary-${{ matrix.update_type }}.md << EOF
+          # Dependency Updates - ${{ matrix.update_type }}
+          
+          Generated: $(date)
+          Update Type: ${{ matrix.update_type }}
+          
+          ## Changes Made
+          
+          \`\`\`diff
+          $(git diff --no-index /dev/null requirements.txt | tail -n +5 || echo "No changes to requirements.txt")
+          \`\`\`
+          
+          ## Security Check Results
+          
+          $(safety check --short-report || echo "Safety check completed")
+          
+          ## Test Results
+          
+          Tests passed successfully with updated dependencies.
+          
+          ## Manual Review Required
+          
+          - [ ] Review major version changes for breaking changes
+          - [ ] Update documentation if API changes occurred
+          - [ ] Run full test suite including GPU tests
+          - [ ] Performance regression testing
+          
+          EOF
+
+      - name: Commit changes
+        run: |
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit for ${{ matrix.update_type }} updates"
+            echo "HAS_CHANGES=false" >> $GITHUB_ENV
+          else
+            git commit -m "chore: update ${{ matrix.update_type }} dependencies
+
+            - Updated ${{ matrix.update_type }}-level dependencies
+            - Resolved security vulnerabilities
+            - Verified compatibility with test suite
+            
+            Generated by dependency-update workflow"
+            echo "HAS_CHANGES=true" >> $GITHUB_ENV
+          fi
+
+      - name: Push changes
+        if: env.HAS_CHANGES == 'true'
+        run: |
+          git push origin $BRANCH_NAME
+
+      - name: Upload update artifacts
+        uses: actions/upload-artifact@v3
+        if: env.HAS_CHANGES == 'true'
+        with:
+          name: dependency-updates-${{ matrix.update_type }}
+          path: |
+            update-summary-${{ matrix.update_type }}.md
+            updated-outdated.json
+            updated-security.json
+
+  # Node.js/JavaScript dependency updates (if applicable)
+  node-updates:
+    runs-on: ubuntu-latest
+    if: needs.dependency-analysis.outputs.has_updates == 'true'
+    needs: dependency-analysis
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for Node.js dependencies
+        id: check-node
+        run: |
+          if [[ -f "package.json" ]]; then
+            echo "has_node=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_node=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Node.js
+        if: steps.check-node.outputs.has_node == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Update Node.js dependencies
+        if: steps.check-node.outputs.has_node == 'true'
+        run: |
+          # Install npm-check-updates
+          npm install -g npm-check-updates
+          
+          # Update dependencies
+          ncu -u
+          npm install
+          
+          # Run security audit
+          npm audit --audit-level moderate
+
+      - name: Run Node.js tests
+        if: steps.check-node.outputs.has_node == 'true'
+        run: |
+          npm test
+
+  # Create pull requests for updates
+  create-pull-requests:
+    runs-on: ubuntu-latest
+    needs: [dependency-analysis, python-updates]
+    if: always() && needs.dependency-analysis.outputs.has_updates == 'true' && github.event.inputs.create_pr != 'false'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download update artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Create pull requests
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Get list of update branches
+            const { data: branches } = await github.rest.repos.listBranches({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            
+            const updateBranches = branches.filter(branch => 
+              branch.name.startsWith('dependency-updates/')
+            );
+            
+            for (const branch of updateBranches) {
+              const updateType = branch.name.split('/')[1].split('-')[0];
+              
+              // Check if PR already exists
+              const { data: existingPRs } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                head: `${context.repo.owner}:${branch.name}`,
+                state: 'open'
+              });
+              
+              if (existingPRs.length === 0) {
+                // Read update summary if available
+                let body = `## Dependency Updates - ${updateType}\n\n`;
+                body += `This PR contains automated dependency updates for ${updateType}-level changes.\n\n`;
+                body += `### Changes\n`;
+                body += `- Updated ${updateType}-level dependencies\n`;
+                body += `- Resolved security vulnerabilities\n`;
+                body += `- Verified compatibility with test suite\n\n`;
+                body += `### Manual Review Required\n`;
+                body += `- [ ] Review changes for breaking compatibility\n`;
+                body += `- [ ] Run full test suite including GPU tests\n`;
+                body += `- [ ] Performance regression testing\n`;
+                body += `- [ ] Update documentation if needed\n\n`;
+                body += `Generated by automated dependency update workflow.\n`;
+                
+                try {
+                  const summaryPath = `dependency-updates-${updateType}/update-summary-${updateType}.md`;
+                  if (fs.existsSync(summaryPath)) {
+                    body = fs.readFileSync(summaryPath, 'utf8');
+                  }
+                } catch (e) {
+                  console.log(`No summary file found for ${updateType}`);
+                }
+                
+                // Create pull request
+                await github.rest.pulls.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: `chore: update ${updateType} dependencies`,
+                  head: branch.name,
+                  base: 'main',
+                  body: body,
+                  draft: updateType === 'major' // Major updates as draft for review
+                });
+                
+                console.log(`Created PR for ${updateType} updates`);
+              }
+            }
+
+  # Cleanup old update branches
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: [create-pull-requests]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cleanup old branches
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // Get list of branches
+            const { data: branches } = await github.rest.repos.listBranches({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            
+            // Find old dependency update branches (older than 30 days)
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            const oldBranches = branches.filter(branch => {
+              if (!branch.name.startsWith('dependency-updates/')) return false;
+              
+              // Extract date from branch name
+              const dateMatch = branch.name.match(/(\d{8})$/);
+              if (!dateMatch) return false;
+              
+              const branchDate = new Date(
+                dateMatch[1].substr(0, 4) + '-' +
+                dateMatch[1].substr(4, 2) + '-' +
+                dateMatch[1].substr(6, 2)
+              );
+              
+              return branchDate < thirtyDaysAgo;
+            });
+            
+            // Delete old branches that don't have open PRs
+            for (const branch of oldBranches) {
+              const { data: prs } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                head: `${context.repo.owner}:${branch.name}`,
+                state: 'open'
+              });
+              
+              if (prs.length === 0) {
+                try {
+                  await github.rest.git.deleteRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `heads/${branch.name}`
+                  });
+                  console.log(`Deleted old branch: ${branch.name}`);
+                } catch (error) {
+                  console.log(`Failed to delete branch ${branch.name}: ${error.message}`);
+                }
+              }
+            }
+
+  # Notification and reporting
+  notification:
+    runs-on: ubuntu-latest
+    needs: [dependency-analysis, python-updates, create-pull-requests]
+    if: always()
+    steps:
+      - name: Send notification
+        run: |
+          echo "Dependency update workflow completed"
+          echo "Updates available: ${{ needs.dependency-analysis.outputs.has_updates }}"
+          echo "Summary: ${{ needs.dependency-analysis.outputs.update_summary }}"
+          
+          # Optional: Send to Slack or other notification system
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"Dependency updates completed for tokamak-rl-control-suite"}' \
+          #   $SLACK_WEBHOOK_URL

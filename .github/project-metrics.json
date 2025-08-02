@@ -1,0 +1,365 @@
+{
+  "project": {
+    "name": "tokamak-rl-control-suite",
+    "description": "Reinforcement learning plasma-shape controllers for compact tokamaks",
+    "version": "1.0.0",
+    "last_updated": "2025-01-01T00:00:00Z"
+  },
+  "metrics": {
+    "code_quality": {
+      "test_coverage": {
+        "target": 85,
+        "current": 0,
+        "unit": "percentage",
+        "source": "codecov",
+        "frequency": "per_commit"
+      },
+      "code_complexity": {
+        "target": 10,
+        "current": 0,
+        "unit": "cyclomatic_complexity",
+        "source": "radon",
+        "frequency": "per_commit"
+      },
+      "linting_score": {
+        "target": 9.0,
+        "current": 0,
+        "unit": "score_0_to_10",
+        "source": "pylint",
+        "frequency": "per_commit"
+      },
+      "type_coverage": {
+        "target": 80,
+        "current": 0,
+        "unit": "percentage",
+        "source": "mypy",
+        "frequency": "per_commit"
+      },
+      "documentation_coverage": {
+        "target": 75,
+        "current": 0,
+        "unit": "percentage",
+        "source": "pydoc-style",
+        "frequency": "weekly"
+      }
+    },
+    "security": {
+      "vulnerability_count": {
+        "target": 0,
+        "current": 0,
+        "unit": "count",
+        "source": "safety,bandit,snyk",
+        "frequency": "daily"
+      },
+      "secret_detection": {
+        "target": 0,
+        "current": 0,
+        "unit": "count",
+        "source": "trufflehog,gitleaks",
+        "frequency": "per_commit"
+      },
+      "dependency_updates": {
+        "target": 7,
+        "current": 0,
+        "unit": "days_since_last_update",
+        "source": "dependabot",
+        "frequency": "daily"
+      },
+      "license_compliance": {
+        "target": 100,
+        "current": 0,
+        "unit": "percentage",
+        "source": "pip-licenses",
+        "frequency": "weekly"
+      }
+    },
+    "performance": {
+      "build_time": {
+        "target": 300,
+        "current": 0,
+        "unit": "seconds",
+        "source": "github_actions",
+        "frequency": "per_build"
+      },
+      "test_execution_time": {
+        "target": 600,
+        "current": 0,
+        "unit": "seconds",
+        "source": "pytest",
+        "frequency": "per_test_run"
+      },
+      "docker_image_size": {
+        "target": 2048,
+        "current": 0,
+        "unit": "megabytes",
+        "source": "docker",
+        "frequency": "per_build"
+      },
+      "inference_latency": {
+        "target": 10,
+        "current": 0,
+        "unit": "milliseconds",
+        "source": "benchmark_tests",
+        "frequency": "per_release"
+      },
+      "training_throughput": {
+        "target": 1000,
+        "current": 0,
+        "unit": "episodes_per_minute",
+        "source": "benchmark_tests",
+        "frequency": "per_release"
+      }
+    },
+    "reliability": {
+      "uptime": {
+        "target": 99.9,
+        "current": 0,
+        "unit": "percentage",
+        "source": "monitoring",
+        "frequency": "real_time"
+      },
+      "error_rate": {
+        "target": 0.1,
+        "current": 0,
+        "unit": "percentage",
+        "source": "application_logs",
+        "frequency": "real_time"
+      },
+      "recovery_time": {
+        "target": 300,
+        "current": 0,
+        "unit": "seconds",
+        "source": "incident_tracking",
+        "frequency": "per_incident"
+      },
+      "deployment_success_rate": {
+        "target": 98,
+        "current": 0,
+        "unit": "percentage",
+        "source": "github_actions",
+        "frequency": "per_deployment"
+      }
+    },
+    "development": {
+      "commit_frequency": {
+        "target": 5,
+        "current": 0,
+        "unit": "commits_per_week",
+        "source": "git",
+        "frequency": "weekly"
+      },
+      "pr_review_time": {
+        "target": 24,
+        "current": 0,
+        "unit": "hours",
+        "source": "github_api",
+        "frequency": "per_pr"
+      },
+      "issue_resolution_time": {
+        "target": 168,
+        "current": 0,
+        "unit": "hours",
+        "source": "github_api",
+        "frequency": "per_issue"
+      },
+      "code_churn": {
+        "target": 20,
+        "current": 0,
+        "unit": "percentage",
+        "source": "git",
+        "frequency": "weekly"
+      },
+      "technical_debt": {
+        "target": 30,
+        "current": 0,
+        "unit": "hours",
+        "source": "sonarqube",
+        "frequency": "weekly"
+      }
+    },
+    "domain_specific": {
+      "plasma_control_accuracy": {
+        "target": 2.0,
+        "current": 0,
+        "unit": "centimeters_rms_error",
+        "source": "simulation_tests",
+        "frequency": "per_release"
+      },
+      "safety_factor_compliance": {
+        "target": 99.9,
+        "current": 0,
+        "unit": "percentage",
+        "source": "safety_tests",
+        "frequency": "per_release"
+      },
+      "disruption_rate": {
+        "target": 2.0,
+        "current": 0,
+        "unit": "percentage",
+        "source": "simulation_tests",
+        "frequency": "per_release"
+      },
+      "energy_confinement_time": {
+        "target": 3.0,
+        "current": 0,
+        "unit": "seconds",
+        "source": "physics_simulation",
+        "frequency": "per_release"
+      },
+      "model_convergence_rate": {
+        "target": 85,
+        "current": 0,
+        "unit": "percentage",
+        "source": "training_logs",
+        "frequency": "per_training_run"
+      }
+    }
+  },
+  "automation": {
+    "enabled_automations": [
+      "dependency_updates",
+      "security_scanning",
+      "performance_monitoring",
+      "metrics_collection",
+      "documentation_generation",
+      "code_quality_checks",
+      "backup_management"
+    ],
+    "scheduled_tasks": {
+      "daily": [
+        "security_vulnerability_scan",
+        "dependency_check",
+        "performance_monitoring",
+        "backup_verification"
+      ],
+      "weekly": [
+        "comprehensive_test_suite",
+        "documentation_update",
+        "license_compliance_check",
+        "technical_debt_analysis"
+      ],
+      "monthly": [
+        "dependency_major_updates",
+        "security_audit",
+        "performance_benchmarking",
+        "infrastructure_review"
+      ]
+    }
+  },
+  "thresholds": {
+    "alerts": {
+      "test_coverage_drop": 5,
+      "build_time_increase": 50,
+      "vulnerability_detection": 1,
+      "performance_regression": 20,
+      "error_rate_spike": 1.0
+    },
+    "blocking": {
+      "critical_vulnerabilities": 0,
+      "test_coverage_minimum": 70,
+      "security_scan_failure": true,
+      "performance_regression_maximum": 50
+    }
+  },
+  "reporting": {
+    "dashboards": [
+      {
+        "name": "executive_summary",
+        "url": "https://grafana.internal/d/executive",
+        "frequency": "weekly",
+        "audience": "executives"
+      },
+      {
+        "name": "engineering_metrics",
+        "url": "https://grafana.internal/d/engineering",
+        "frequency": "daily",
+        "audience": "engineers"
+      },
+      {
+        "name": "security_overview",
+        "url": "https://grafana.internal/d/security",
+        "frequency": "daily",
+        "audience": "security_team"
+      },
+      {
+        "name": "plasma_physics_metrics",
+        "url": "https://grafana.internal/d/plasma",
+        "frequency": "real_time",
+        "audience": "physicists"
+      }
+    ],
+    "automated_reports": [
+      {
+        "name": "weekly_health_report",
+        "schedule": "monday_9am",
+        "recipients": ["team-leads@company.com"],
+        "format": "email"
+      },
+      {
+        "name": "monthly_metrics_summary",
+        "schedule": "first_monday_monthly",
+        "recipients": ["stakeholders@company.com"],
+        "format": "pdf"
+      },
+      {
+        "name": "security_status_report",
+        "schedule": "daily_6am",
+        "recipients": ["security@company.com"],
+        "format": "slack"
+      }
+    ]
+  },
+  "data_sources": {
+    "github": {
+      "api_endpoint": "https://api.github.com",
+      "metrics": ["commits", "prs", "issues", "actions"],
+      "authentication": "github_token"
+    },
+    "codecov": {
+      "api_endpoint": "https://codecov.io/api",
+      "metrics": ["coverage"],
+      "authentication": "codecov_token"
+    },
+    "sonarqube": {
+      "api_endpoint": "https://sonar.internal/api",
+      "metrics": ["quality_gate", "technical_debt"],
+      "authentication": "sonar_token"
+    },
+    "prometheus": {
+      "api_endpoint": "https://prometheus.internal/api/v1",
+      "metrics": ["performance", "reliability"],
+      "authentication": "bearer_token"
+    },
+    "grafana": {
+      "api_endpoint": "https://grafana.internal/api",
+      "metrics": ["dashboards"],
+      "authentication": "api_key"
+    }
+  },
+  "collection_schedule": {
+    "real_time": [
+      "uptime",
+      "error_rate",
+      "plasma_control_accuracy"
+    ],
+    "hourly": [
+      "build_time",
+      "test_execution_time"
+    ],
+    "daily": [
+      "vulnerability_count",
+      "dependency_updates",
+      "commit_frequency"
+    ],
+    "weekly": [
+      "test_coverage",
+      "code_complexity",
+      "technical_debt"
+    ],
+    "on_event": [
+      "deployment_success_rate",
+      "pr_review_time",
+      "issue_resolution_time"
+    ]
+  }
+}

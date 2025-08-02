@@ -1,0 +1,489 @@
+# Security Scanning Workflow Template - tokamak-rl-control-suite
+# This file should be placed at .github/workflows/security-scan.yml
+
+name: Security Scanning
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Run daily at 2 AM UTC
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.8'
+
+jobs:
+  # SAST (Static Application Security Testing)
+  sast-scan:
+    runs-on: ubuntu-latest
+    name: SAST - Static Code Analysis
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # Bandit - Python security linter
+      - name: Run Bandit security scan
+        run: |
+          pip install bandit[toml]
+          bandit -r src/ -f json -o bandit-report.json -ll
+          bandit -r src/ -f txt -o bandit-report.txt -ll || true
+
+      - name: Upload Bandit results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: bandit-security-report
+          path: |
+            bandit-report.json
+            bandit-report.txt
+
+      # Semgrep - Multi-language static analysis
+      - name: Run Semgrep security scan
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/python
+            p/django
+            p/flask
+          generateSarif: "1"
+
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+
+      # CodeQL Analysis
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: python
+          queries: security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  # Secret scanning
+  secret-scan:
+    runs-on: ubuntu-latest
+    name: Secret Detection
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # TruffleHog - Secret detection
+      - name: Run TruffleHog secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      # GitLeaks - Additional secret detection
+      - name: Run GitLeaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Detect-secrets - Baseline secret detection
+      - name: Run detect-secrets scan
+        run: |
+          pip install detect-secrets
+          detect-secrets scan --all-files --baseline .secrets.baseline || true
+          if [ -f .secrets.baseline ]; then
+            detect-secrets audit .secrets.baseline --report
+          fi
+
+  # Dependency vulnerability scanning
+  dependency-scan:
+    runs-on: ubuntu-latest
+    name: Dependency Vulnerabilities
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # Safety - Python dependency vulnerability scanner
+      - name: Run Safety scan
+        run: |
+          pip install safety
+          safety check --json --output safety-report.json || true
+          safety check --output safety-report.txt || true
+
+      # pip-audit - Official Python vulnerability scanner
+      - name: Run pip-audit scan
+        run: |
+          pip install pip-audit
+          pip-audit --format=json --output=pip-audit-report.json || true
+          pip-audit --format=cyclone-dx --output=pip-audit-cyclone.json || true
+
+      # Snyk - Comprehensive dependency scanning
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/python@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=medium --json-file-output=snyk-report.json
+
+      - name: Upload Snyk report as sarif
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+
+      - name: Upload dependency scan results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: dependency-scan-results
+          path: |
+            safety-report.json
+            safety-report.txt
+            pip-audit-report.json
+            pip-audit-cyclone.json
+            snyk-report.json
+
+  # Container image security scanning
+  container-scan:
+    runs-on: ubuntu-latest
+    name: Container Security
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t tokamak-rl-control:security-scan .
+
+      # Trivy - Comprehensive container scanner
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'tokamak-rl-control:security-scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      # Additional Trivy scans for different types
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'json'
+          output: 'trivy-fs-results.json'
+
+      - name: Run Trivy config scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          format: 'json'
+          output: 'trivy-config-results.json'
+
+      # Snyk container scanning
+      - name: Run Snyk container scan
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: 'tokamak-rl-control:security-scan'
+          args: --severity-threshold=medium --json-file-output=snyk-container-report.json
+
+      # Grype - Additional vulnerability scanner
+      - name: Run Grype vulnerability scanner
+        uses: anchore/scan-action@v3
+        with:
+          image: 'tokamak-rl-control:security-scan'
+          fail-build: false
+          output-format: sarif
+          output-file: grype-results.sarif
+
+      - name: Upload container scan results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: container-scan-results
+          path: |
+            trivy-results.sarif
+            trivy-fs-results.json
+            trivy-config-results.json
+            snyk-container-report.json
+            grype-results.sarif
+
+  # Infrastructure as Code security scanning
+  iac-scan:
+    runs-on: ubuntu-latest
+    name: IaC Security
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Checkov - IaC security scanner
+      - name: Run Checkov IaC scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: dockerfile,kubernetes,github_actions
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+
+      - name: Upload Checkov SARIF
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: checkov-results.sarif
+
+      # Terrascan - Additional IaC scanner
+      - name: Run Terrascan IaC scan
+        uses: tenable/terrascan-action@main
+        with:
+          iac_type: 'docker'
+          iac_version: 'v1'
+          policy_type: 'all'
+          only_warn: true
+          sarif_upload: true
+
+      # KICS - Keeping Infrastructure as Code Secure
+      - name: Run KICS IaC scan
+        uses: checkmarx/kics-github-action@master
+        with:
+          path: '.'
+          output_path: kics-results.json
+          output_formats: 'json,sarif'
+          exclude_queries: ''
+
+      - name: Upload KICS SARIF
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: results.sarif
+
+  # License compliance scanning
+  license-scan:
+    runs-on: ubuntu-latest
+    name: License Compliance
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      # FOSSA - License compliance scanning
+      - name: Run FOSSA license scan
+        if: env.FOSSA_API_KEY != ''
+        env:
+          FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
+        run: |
+          curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install-latest.sh | bash
+          fossa analyze
+          fossa test
+
+      # pip-licenses - Python license detection
+      - name: Generate license report
+        run: |
+          pip install pip-licenses
+          pip-licenses --format=json --output-file=license-report.json
+          pip-licenses --format=csv --output-file=license-report.csv
+
+      # License checker
+      - name: Check license compatibility
+        run: |
+          pip install licensecheck
+          licensecheck --zero || true
+
+      - name: Upload license reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: license-reports
+          path: |
+            license-report.json
+            license-report.csv
+
+  # SBOM (Software Bill of Materials) generation
+  sbom-generation:
+    runs-on: ubuntu-latest
+    name: SBOM Generation
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # Generate SBOM using syft
+      - name: Generate SBOM with syft
+        uses: anchore/sbom-action@v0
+        with:
+          path: ./
+          format: spdx-json
+          output-file: sbom-syft.spdx.json
+
+      # Generate SBOM using cyclonedx
+      - name: Generate SBOM with cyclonedx
+        run: |
+          pip install cyclonedx-bom
+          cyclonedx-py -o sbom-cyclone.json
+
+      # Upload SBOMs
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom-reports
+          path: |
+            sbom-syft.spdx.json
+            sbom-cyclone.json
+
+  # Security report compilation
+  security-report:
+    runs-on: ubuntu-latest
+    name: Security Report
+    needs: [sast-scan, secret-scan, dependency-scan, container-scan, iac-scan, license-scan, sbom-generation]
+    if: always()
+    steps:
+      - name: Download all security artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Compile security report
+        run: |
+          echo "# Security Scan Report" > security-report.md
+          echo "Generated: $(date)" >> security-report.md
+          echo "" >> security-report.md
+          
+          echo "## Summary" >> security-report.md
+          echo "- SAST Scan: ${{ needs.sast-scan.result }}" >> security-report.md
+          echo "- Secret Scan: ${{ needs.secret-scan.result }}" >> security-report.md
+          echo "- Dependency Scan: ${{ needs.dependency-scan.result }}" >> security-report.md
+          echo "- Container Scan: ${{ needs.container-scan.result }}" >> security-report.md
+          echo "- IaC Scan: ${{ needs.iac-scan.result }}" >> security-report.md
+          echo "- License Scan: ${{ needs.license-scan.result }}" >> security-report.md
+          echo "- SBOM Generation: ${{ needs.sbom-generation.result }}" >> security-report.md
+          echo "" >> security-report.md
+          
+          # Add details from each scan type
+          echo "## Detailed Results" >> security-report.md
+          echo "Detailed results are available in the individual scan artifacts." >> security-report.md
+
+      - name: Upload comprehensive security report
+        uses: actions/upload-artifact@v3
+        with:
+          name: comprehensive-security-report
+          path: security-report.md
+
+      # Create security issue if critical vulnerabilities found
+      - name: Create security issue
+        if: contains(needs.*.result, 'failure')
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Security Scan Failed - Critical Vulnerabilities Detected',
+              body: `Security scanning has detected critical vulnerabilities that require immediate attention.
+              
+              **Scan Results:**
+              - SAST: ${{ needs.sast-scan.result }}
+              - Secret Scan: ${{ needs.secret-scan.result }}
+              - Dependency Scan: ${{ needs.dependency-scan.result }}
+              - Container Scan: ${{ needs.container-scan.result }}
+              - IaC Scan: ${{ needs.iac-scan.result }}
+              
+              Please review the detailed scan results in the workflow artifacts and address all critical and high severity findings.
+              
+              **Action Required:**
+              1. Review all scan results
+              2. Fix critical and high severity vulnerabilities
+              3. Update dependencies to secure versions
+              4. Re-run security scans to verify fixes
+              
+              Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+              labels: ['security', 'critical', 'vulnerability']
+            })
+
+  # Security metrics collection
+  security-metrics:
+    runs-on: ubuntu-latest
+    name: Security Metrics
+    needs: [sast-scan, secret-scan, dependency-scan, container-scan, iac-scan]
+    if: always()
+    steps:
+      - name: Collect security metrics
+        run: |
+          echo "Collecting security metrics..."
+          
+          # Create metrics file
+          cat > security-metrics.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "repository": "${{ github.repository }}",
+            "commit": "${{ github.sha }}",
+            "scan_results": {
+              "sast": "${{ needs.sast-scan.result }}",
+              "secrets": "${{ needs.secret-scan.result }}",
+              "dependencies": "${{ needs.dependency-scan.result }}",
+              "container": "${{ needs.container-scan.result }}",
+              "iac": "${{ needs.iac-scan.result }}"
+            },
+            "workflow_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }
+          EOF
+
+      - name: Upload security metrics
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-metrics
+          path: security-metrics.json
+
+      # Optional: Send metrics to external system
+      - name: Send metrics to monitoring system
+        if: env.SECURITY_METRICS_ENDPOINT != ''
+        env:
+          SECURITY_METRICS_ENDPOINT: ${{ secrets.SECURITY_METRICS_ENDPOINT }}
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d @security-metrics.json \
+            "$SECURITY_METRICS_ENDPOINT" || true
