@@ -76,6 +76,9 @@ tokamak-eval = "tokamak_rl.cli:evaluate"
 [tool.hatch.version]
 path = "src/tokamak_rl/__init__.py"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/tokamak_rl"]
+
 [tool.ruff]
 target-version = "py38"
 line-length = 88

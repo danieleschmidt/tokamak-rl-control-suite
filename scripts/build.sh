@@ -1,22 +1,8 @@
 #!/bin/bash
-set -euo pipefail
+# Build script for Tokamak RL Control Suite
+# Provides comprehensive build automation with multiple targets
 
-# Build script for tokamak-rl-control-suite
-# Provides standardized building, testing, and deployment automation
-
-# Default values
-BUILD_TARGET="development"
-DOCKER_REGISTRY=""
-IMAGE_TAG="latest"
-PUSH_IMAGE=false
-RUN_TESTS=true
-VERBOSE=false
-CLEAN_BUILD=false
-PLATFORM="linux/amd64"
-
-# Script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+set -euo pipefail  # Exit on error, undefined vars, pipe failures
 
 # Colors for output
 RED='\033[0;31m'
@@ -25,7 +11,14 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Logging functions
+# Configuration
+PROJECT_NAME="tokamak-rl-control-suite"
+DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io/username}"
+VERSION="${VERSION:-$(cat pyproject.toml | grep version | cut -d'"' -f2)}"
+BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
+# Functions
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
@@ -42,355 +35,443 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Show usage
-show_usage() {
+show_help() {
     cat << EOF
-Usage: $0 [OPTIONS]
+Tokamak RL Control Suite Build Script
 
-Build and deploy tokamak-rl-control-suite Docker images
+Usage: $0 [COMMAND] [OPTIONS]
 
-OPTIONS:
-    -t, --target TARGET       Build target (development|production|docs) [default: development]
-    -r, --registry REGISTRY   Docker registry to push to
-    --tag TAG                 Image tag [default: latest]
-    --push                    Push image to registry after build
-    --no-tests                Skip running tests during build
-    --clean                   Clean build (no cache)
-    --platform PLATFORM      Target platform [default: linux/amd64]
-    -v, --verbose             Verbose output
-    -h, --help                Show this help message
+Commands:
+    all                 Build all targets (default)
+    clean              Clean build artifacts
+    lint               Run code linting
+    test               Run test suite
+    type-check         Run type checking
+    security           Run security scans
+    docs               Build documentation
+    package            Build Python package
+    docker             Build Docker images
+    docker-dev         Build development Docker image
+    docker-prod        Build production Docker image
+    docker-docs        Build documentation Docker image
+    push               Push Docker images to registry
+    release            Create release build (lint + test + package + docker)
+    install            Install package locally
+    install-dev        Install in development mode
+    check              Run all checks (lint + test + type-check + security)
 
-EXAMPLES:
-    $0                                           # Build development image
-    $0 -t production --tag v1.0.0              # Build production image with tag
-    $0 -t production --push --registry myregistry.io  # Build and push to registry
-    $0 --clean -v                               # Clean verbose build
+Options:
+    -v, --verbose      Verbose output
+    -h, --help         Show this help message
+    --no-cache         Disable Docker build cache
+    --parallel         Run tests in parallel
 
-TARGETS:
-    development     Full development environment with tools
-    production      Optimized production environment
-    docs            Documentation builder and server
-    all             Build all targets
+Examples:
+    $0                 # Build everything
+    $0 test            # Run tests only
+    $0 docker --no-cache  # Build Docker images without cache
+    $0 release         # Create full release build
+
+Environment Variables:
+    DOCKER_REGISTRY    Docker registry URL (default: ghcr.io/username)
+    VERSION           Override version from pyproject.toml
+    PYTHON_VERSION    Python version for Docker (default: 3.11)
+    BUILD_PARALLEL    Number of parallel jobs (default: auto)
 
 EOF
 }
 
-# Parse command line arguments
-parse_args() {
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            -t|--target)
-                BUILD_TARGET="$2"
-                shift 2
-                ;;
-            -r|--registry)
-                DOCKER_REGISTRY="$2"
-                shift 2
-                ;;
-            --tag)
-                IMAGE_TAG="$2"
-                shift 2
-                ;;
-            --push)
-                PUSH_IMAGE=true
-                shift
-                ;;
-            --no-tests)
-                RUN_TESTS=false
-                shift
-                ;;
-            --clean)
-                CLEAN_BUILD=true
-                shift
-                ;;
-            --platform)
-                PLATFORM="$2"
-                shift 2
-                ;;
-            -v|--verbose)
-                VERBOSE=true
-                shift
-                ;;
-            -h|--help)
-                show_usage
-                exit 0
-                ;;
-            *)
-                log_error "Unknown option: $1"
-                show_usage
-                exit 1
-                ;;
-        esac
-    done
-}
+# Parse arguments
+VERBOSE=false
+NO_CACHE=""
+PARALLEL=false
+COMMAND="all"
 
-# Validate build target
-validate_target() {
-    case $BUILD_TARGET in
-        development|production|docs|all)
-            log_info "Building target: $BUILD_TARGET"
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -v|--verbose)
+            VERBOSE=true
+            shift
+            ;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        --no-cache)
+            NO_CACHE="--no-cache"
+            shift
+            ;;
+        --parallel)
+            PARALLEL=true
+            shift
             ;;
         *)
-            log_error "Invalid build target: $BUILD_TARGET"
-            log_info "Valid targets: development, production, docs, all"
-            exit 1
+            COMMAND="$1"
+            shift
             ;;
     esac
-}
+done
 
-# Check prerequisites
-check_prerequisites() {
-    log_info "Checking prerequisites..."
-    
-    # Check Docker
-    if ! command -v docker &> /dev/null; then
-        log_error "Docker is required but not installed"
-        exit 1
-    fi
-    
-    # Check Docker Buildx (for multi-platform builds)
-    if ! docker buildx version &> /dev/null; then
-        log_warning "Docker Buildx not available, using legacy build"
-    fi
-    
-    # Check if Docker is running
-    if ! docker info &> /dev/null; then
-        log_error "Docker daemon is not running"
-        exit 1
-    fi
-    
-    log_success "Prerequisites check passed"
-}
+# Set verbose output
+if [[ "$VERBOSE" == "true" ]]; then
+    set -x
+fi
 
-# Get image name
-get_image_name() {
-    local target=$1
-    local base_name="tokamak-rl-control-suite"
+# Build functions
+clean() {
+    log_info "Cleaning build artifacts..."
     
-    if [[ -n "$DOCKER_REGISTRY" ]]; then
-        echo "${DOCKER_REGISTRY}/${base_name}:${target}-${IMAGE_TAG}"
-    else
-        echo "${base_name}:${target}-${IMAGE_TAG}"
-    fi
-}
-
-# Build single target
-build_target() {
-    local target=$1
-    local image_name=$(get_image_name "$target")
+    # Python build artifacts
+    rm -rf build/
+    rm -rf dist/
+    rm -rf *.egg-info/
+    find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+    find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
+    find . -type d -name .mypy_cache -exec rm -rf {} + 2>/dev/null || true
+    find . -type f -name "*.pyc" -delete 2>/dev/null || true
     
-    log_info "Building $target target..."
-    log_info "Image name: $image_name"
+    # Test artifacts
+    rm -rf .coverage
+    rm -rf htmlcov/
+    rm -rf .tox/
     
-    # Prepare build arguments
-    local build_args=""
-    if [[ "$VERBOSE" == "true" ]]; then
-        build_args="--progress=plain"
-    fi
+    # Documentation
+    rm -rf docs/_build/
     
-    if [[ "$CLEAN_BUILD" == "true" ]]; then
-        build_args="$build_args --no-cache"
-    fi
-    
-    # Build command
-    local build_cmd="docker build"
-    
-    # Use buildx if available for multi-platform builds
-    if docker buildx version &> /dev/null && [[ "$PLATFORM" != "linux/amd64" || "$target" == "all" ]]; then
-        build_cmd="docker buildx build --platform $PLATFORM"
-    fi
-    
-    # Execute build
-    cd "$PROJECT_ROOT"
-    
-    if [[ "$target" == "all" ]]; then
-        # Build all targets
-        for t in development production docs; do
-            local t_image_name=$(get_image_name "$t")
-            log_info "Building $t..."
-            
-            $build_cmd \
-                $build_args \
-                --target "$t" \
-                --tag "$t_image_name" \
-                .
-            
-            log_success "Built $t_image_name"
-        done
-    else
-        # Build single target
-        $build_cmd \
-            $build_args \
-            --target "$target" \
-            --tag "$image_name" \
-            .
+    # Docker cleanup
+    if command -v docker &> /dev/null; then
+        log_info "Cleaning Docker artifacts..."
+        docker system prune -f --volumes || true
         
-        log_success "Built $image_name"
+        # Remove project images
+        docker images --format "table {{.Repository}}:{{.Tag}}" | grep "$PROJECT_NAME" | xargs -r docker rmi || true
     fi
+    
+    log_success "Clean completed"
 }
 
-# Run tests
-run_tests() {
-    if [[ "$RUN_TESTS" == "false" ]]; then
-        log_info "Skipping tests (--no-tests specified)"
-        return 0
+lint() {
+    log_info "Running code linting..."
+    
+    # Check if tools are installed
+    if ! command -v ruff &> /dev/null; then
+        log_warning "ruff not found, installing..."
+        pip install ruff
     fi
     
-    log_info "Running tests..."
-    
-    # Use test service from docker-compose
-    cd "$PROJECT_ROOT"
-    
-    if [[ "$BUILD_TARGET" == "all" ]] || [[ "$BUILD_TARGET" == "development" ]]; then
-        docker-compose run --rm tokamak-test
-        log_success "Tests passed"
-    else
-        log_info "Skipping tests for $BUILD_TARGET target"
-    fi
-}
-
-# Push image to registry
-push_image() {
-    if [[ "$PUSH_IMAGE" == "false" ]]; then
-        log_info "Skipping image push"
-        return 0
+    if ! command -v black &> /dev/null; then
+        log_warning "black not found, installing..."
+        pip install black
     fi
     
-    if [[ -z "$DOCKER_REGISTRY" ]]; then
-        log_error "Registry not specified, cannot push image"
-        exit 1
-    fi
-    
-    log_info "Pushing images to registry..."
-    
-    if [[ "$BUILD_TARGET" == "all" ]]; then
-        for target in development production docs; do
-            local image_name=$(get_image_name "$target")
-            log_info "Pushing $image_name..."
-            docker push "$image_name"
-            log_success "Pushed $image_name"
-        done
-    else
-        local image_name=$(get_image_name "$BUILD_TARGET")
-        log_info "Pushing $image_name..."
-        docker push "$image_name"
-        log_success "Pushed $image_name"
-    fi
-}
-
-# Security scan
-security_scan() {
-    log_info "Running security scan..."
-    
-    local image_name=$(get_image_name "$BUILD_TARGET")
-    
-    # Use trivy if available
-    if command -v trivy &> /dev/null; then
-        log_info "Scanning with Trivy..."
-        trivy image --severity HIGH,CRITICAL "$image_name"
-    else
-        log_warning "Trivy not available, skipping security scan"
-        log_info "Install Trivy for security scanning: https://github.com/aquasecurity/trivy"
-    fi
-}
-
-# Generate build report
-generate_build_report() {
-    log_info "Generating build report..."
-    
-    local report_file="${PROJECT_ROOT}/build-report-$(date +%Y%m%d-%H%M%S).json"
-    
-    cat > "$report_file" << EOF
-{
-  "build_info": {
-    "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-    "target": "$BUILD_TARGET",
-    "tag": "$IMAGE_TAG",
-    "platform": "$PLATFORM",
-    "registry": "$DOCKER_REGISTRY",
-    "git_commit": "$(git rev-parse HEAD 2>/dev/null || echo 'unknown')",
-    "git_branch": "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown')"
-  },
-  "images": [
-EOF
-
-    if [[ "$BUILD_TARGET" == "all" ]]; then
-        for target in development production docs; do
-            local image_name=$(get_image_name "$target")
-            local image_id=$(docker images --format "{{.ID}}" --filter "reference=$image_name" | head -1)
-            local image_size=$(docker images --format "{{.Size}}" --filter "reference=$image_name" | head -1)
-            
-            cat >> "$report_file" << EOF
-    {
-      "target": "$target",
-      "name": "$image_name",
-      "id": "$image_id",
-      "size": "$image_size"
-    },
-EOF
-        done
-        # Remove trailing comma
-        sed -i '$ s/,$//' "$report_file"
-    else
-        local image_name=$(get_image_name "$BUILD_TARGET")
-        local image_id=$(docker images --format "{{.ID}}" --filter "reference=$image_name" | head -1)
-        local image_size=$(docker images --format "{{.Size}}" --filter "reference=$image_name" | head -1)
-        
-        cat >> "$report_file" << EOF
-    {
-      "target": "$BUILD_TARGET",
-      "name": "$image_name",
-      "id": "$image_id",
-      "size": "$image_size"
+    # Run formatters and linters
+    log_info "Running black formatter..."
+    black --check --diff src/ tests/ || {
+        log_warning "Code formatting issues found. Run 'black src/ tests/' to fix."
+        return 1
     }
-EOF
-    fi
     
-    cat >> "$report_file" << EOF
-  ]
-}
-EOF
+    log_info "Running ruff linter..."
+    ruff check src/ tests/
     
-    log_success "Build report saved to: $report_file"
+    log_info "Running import sorting check..."
+    ruff check --select I src/ tests/
+    
+    log_success "Linting completed"
 }
 
-# Main function
-main() {
-    log_info "Starting tokamak-rl-control-suite build process..."
+type_check() {
+    log_info "Running type checking..."
     
-    parse_args "$@"
-    validate_target
-    check_prerequisites
+    if ! command -v mypy &> /dev/null; then
+        log_warning "mypy not found, installing..."
+        pip install mypy
+    fi
     
-    # Start timer
-    start_time=$(date +%s)
+    # Run mypy
+    mypy src/tokamak_rl/ --ignore-missing-imports
     
-    # Build process
-    build_target "$BUILD_TARGET"
-    run_tests
-    security_scan
-    push_image
-    generate_build_report
+    log_success "Type checking completed"
+}
+
+test() {
+    log_info "Running test suite..."
     
-    # End timer
-    end_time=$(date +%s)
-    duration=$((end_time - start_time))
+    # Set test options
+    TEST_OPTS=""
+    if [[ "$PARALLEL" == "true" ]]; then
+        TEST_OPTS="-n auto"
+    fi
     
-    log_success "Build completed successfully in ${duration}s"
+    # Run tests with coverage
+    python -m pytest tests/ \
+        --cov=src/tokamak_rl \
+        --cov-report=term-missing \
+        --cov-report=html \
+        --cov-report=xml \
+        --junitxml=test-results.xml \
+        -v $TEST_OPTS
     
-    # Show image information
-    if [[ "$BUILD_TARGET" == "all" ]]; then
-        log_info "Built images:"
-        for target in development production docs; do
-            local image_name=$(get_image_name "$target")
-            docker images --filter "reference=$image_name" --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
-        done
+    # Check coverage threshold
+    COVERAGE=$(python -c "import xml.etree.ElementTree as ET; print(float(ET.parse('coverage.xml').getroot().attrib['line-rate']) * 100)" 2>/dev/null || echo "0")
+    THRESHOLD=80
+    
+    if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
+        log_warning "Coverage ${COVERAGE}% is below threshold ${THRESHOLD}%"
     else
-        local image_name=$(get_image_name "$BUILD_TARGET")
-        log_info "Built image:"
-        docker images --filter "reference=$image_name" --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
+        log_success "Coverage ${COVERAGE}% meets threshold ${THRESHOLD}%"
     fi
+    
+    log_success "Testing completed"
 }
 
-# Run main function with all arguments
-main "$@"
+security() {
+    log_info "Running security scans..."
+    
+    if ! command -v bandit &> /dev/null; then
+        log_warning "bandit not found, installing..."
+        pip install bandit
+    fi
+    
+    if ! command -v safety &> /dev/null; then
+        log_warning "safety not found, installing..."
+        pip install safety
+    fi
+    
+    # Run bandit security linter
+    log_info "Running bandit security scan..."
+    bandit -r src/ -f json -o bandit-report.json || {
+        log_warning "Security issues found. Check bandit-report.json"
+    }
+    
+    # Check dependencies for known vulnerabilities
+    log_info "Checking dependencies for vulnerabilities..."
+    safety check --json --output safety-report.json || {
+        log_warning "Vulnerable dependencies found. Check safety-report.json"
+    }
+    
+    log_success "Security scanning completed"
+}
+
+docs() {
+    log_info "Building documentation..."
+    
+    if ! command -v sphinx-build &> /dev/null; then
+        log_warning "sphinx not found, installing docs dependencies..."
+        pip install -e ".[docs]"
+    fi
+    
+    # Build docs
+    sphinx-build -b html docs/ docs/_build/html/
+    
+    # Check for broken links
+    sphinx-build -b linkcheck docs/ docs/_build/linkcheck/ || {
+        log_warning "Broken links found in documentation"
+    }
+    
+    log_success "Documentation built at docs/_build/html/"
+}
+
+package() {
+    log_info "Building Python package..."
+    
+    # Clean previous builds
+    rm -rf build/ dist/ *.egg-info/
+    
+    # Build package
+    python -m build
+    
+    # Verify package
+    python -m twine check dist/*
+    
+    log_success "Package built successfully"
+    ls -la dist/
+}
+
+docker_build() {
+    local target="$1"
+    local tag="$2"
+    local dockerfile="${3:-Dockerfile}"
+    
+    log_info "Building Docker image: $tag (target: $target)"
+    
+    docker build $NO_CACHE \
+        --target "$target" \
+        --tag "$tag" \
+        --build-arg VERSION="$VERSION" \
+        --build-arg BUILD_DATE="$BUILD_DATE" \
+        --build-arg GIT_COMMIT="$GIT_COMMIT" \
+        --file "$dockerfile" \
+        .
+        
+    log_success "Docker image built: $tag"
+}
+
+docker() {
+    log_info "Building all Docker images..."
+    
+    # Build development image
+    docker_build "development" "${DOCKER_REGISTRY}/${PROJECT_NAME}:${VERSION}-dev"
+    docker_build "development" "${DOCKER_REGISTRY}/${PROJECT_NAME}:latest-dev"
+    
+    # Build production image
+    docker_build "production" "${DOCKER_REGISTRY}/${PROJECT_NAME}:${VERSION}"
+    docker_build "production" "${DOCKER_REGISTRY}/${PROJECT_NAME}:latest"
+    
+    # Build docs image
+    docker_build "docs" "${DOCKER_REGISTRY}/${PROJECT_NAME}:${VERSION}-docs"
+    docker_build "docs" "${DOCKER_REGISTRY}/${PROJECT_NAME}:latest-docs"
+    
+    log_success "All Docker images built"
+}
+
+docker_dev() {
+    docker_build "development" "${DOCKER_REGISTRY}/${PROJECT_NAME}:${VERSION}-dev"
+    docker_build "development" "${DOCKER_REGISTRY}/${PROJECT_NAME}:latest-dev"
+}
+
+docker_prod() {
+    docker_build "production" "${DOCKER_REGISTRY}/${PROJECT_NAME}:${VERSION}"
+    docker_build "production" "${DOCKER_REGISTRY}/${PROJECT_NAME}:latest"
+}
+
+docker_docs() {
+    docker_build "docs" "${DOCKER_REGISTRY}/${PROJECT_NAME}:${VERSION}-docs"
+    docker_build "docs" "${DOCKER_REGISTRY}/${PROJECT_NAME}:latest-docs"
+}
+
+push() {
+    log_info "Pushing Docker images to registry..."
+    
+    # Push all images
+    docker push "${DOCKER_REGISTRY}/${PROJECT_NAME}:${VERSION}"
+    docker push "${DOCKER_REGISTRY}/${PROJECT_NAME}:latest"
+    docker push "${DOCKER_REGISTRY}/${PROJECT_NAME}:${VERSION}-dev"
+    docker push "${DOCKER_REGISTRY}/${PROJECT_NAME}:latest-dev"
+    docker push "${DOCKER_REGISTRY}/${PROJECT_NAME}:${VERSION}-docs"
+    docker push "${DOCKER_REGISTRY}/${PROJECT_NAME}:latest-docs"
+    
+    log_success "Images pushed to registry"
+}
+
+install() {
+    log_info "Installing package..."
+    pip install .
+    log_success "Package installed"
+}
+
+install_dev() {
+    log_info "Installing package in development mode..."
+    pip install -e ".[dev,docs,mpi]"
+    log_success "Package installed in development mode"
+}
+
+check() {
+    log_info "Running all checks..."
+    lint
+    type_check
+    test
+    security
+    log_success "All checks completed"
+}
+
+release() {
+    log_info "Creating release build..."
+    
+    # Run all checks
+    check
+    
+    # Build artifacts
+    docs
+    package
+    docker
+    
+    log_success "Release build completed"
+    
+    # Show summary
+    echo
+    log_info "Release Summary:"
+    echo "  Version: $VERSION"
+    echo "  Git Commit: $GIT_COMMIT"
+    echo "  Build Date: $BUILD_DATE"
+    echo "  Package: $(ls dist/*.whl | head -1)"
+    echo "  Docker Images:"
+    echo "    - ${DOCKER_REGISTRY}/${PROJECT_NAME}:${VERSION}"
+    echo "    - ${DOCKER_REGISTRY}/${PROJECT_NAME}:${VERSION}-dev"
+    echo "    - ${DOCKER_REGISTRY}/${PROJECT_NAME}:${VERSION}-docs"
+}
+
+all() {
+    log_info "Running full build pipeline..."
+    clean
+    check
+    docs
+    package
+    docker
+    log_success "Full build completed"
+}
+
+# Execute command
+case "$COMMAND" in
+    all)
+        all
+        ;;
+    clean)
+        clean
+        ;;
+    lint)
+        lint
+        ;;
+    test)
+        test
+        ;;
+    type-check)
+        type_check
+        ;;
+    security)
+        security
+        ;;
+    docs)
+        docs
+        ;;
+    package)
+        package
+        ;;
+    docker)
+        docker
+        ;;
+    docker-dev)
+        docker_dev
+        ;;
+    docker-prod)
+        docker_prod
+        ;;
+    docker-docs)
+        docker_docs
+        ;;
+    push)
+        push
+        ;;
+    install)
+        install
+        ;;
+    install-dev)
+        install_dev
+        ;;
+    check)
+        check
+        ;;
+    release)
+        release
+        ;;
+    help)
+        show_help
+        ;;
+    *)
+        log_error "Unknown command: $COMMAND"
+        show_help
+        exit 1
+        ;;
+esac
+
+log_success "Build script completed successfully"

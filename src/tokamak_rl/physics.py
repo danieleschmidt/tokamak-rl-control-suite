@@ -18,12 +18,10 @@ class TokamakConfig:
     # Geometric parameters
     major_radius: float  # Major radius (m)
     minor_radius: float  # Minor radius (m)
-    elongation: float = 1.7  # Plasma elongation
-    triangularity: float = 0.4  # Plasma triangularity
-    
-    # Magnetic field parameters
     toroidal_field: float  # Toroidal field at major radius (T)
     plasma_current: float  # Plasma current (MA)
+    elongation: float = 1.7  # Plasma elongation
+    triangularity: float = 0.4  # Plasma triangularity
     num_pf_coils: int = 6  # Number of poloidal field coils
     
     # Physics parameters
