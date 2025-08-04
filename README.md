@@ -37,7 +37,7 @@ Where:
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/tokamak-rl-control-suite.git
+git clone https://github.com/danieleschmidt/tokamak-rl-control-suite.git
 cd tokamak-rl-control-suite
 
 # Create conda environment
@@ -324,7 +324,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ```bibtex
 @article{tokamak_rl_control,
   title={Open-Source Reinforcement Learning for Tokamak Plasma Control},
-  author={Your Name},
+  author={Daniel Schmidt},
   journal={Nuclear Fusion},
   year={2025},
   doi={10.1088/1741-4326/xxxxx}
