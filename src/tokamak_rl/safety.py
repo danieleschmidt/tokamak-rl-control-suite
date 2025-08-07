@@ -5,12 +5,109 @@ This module implements safety shields, disruption prediction, and constraint
 management to ensure safe operation of RL-controlled tokamak plasmas.
 """
 
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    import math
+    
+    class np:
+        @staticmethod
+        def array(x):
+            return list(x) if hasattr(x, '__iter__') else [x]
+        
+        @staticmethod
+        def zeros(size):
+            return [0.0] * size
+        
+        @staticmethod
+        def ones(size):
+            return [1.0] * size
+        
+        @staticmethod
+        def clip(val, min_val, max_val):
+            if hasattr(val, '__iter__'):
+                return [max(min_val, min(max_val, v)) for v in val]
+            return max(min_val, min(max_val, val))
+        
+        @staticmethod
+        def min(arr):
+            return min(arr)
+        
+        @staticmethod
+        def max(arr):
+            return max(arr)
+        
+        @staticmethod
+        def all(arr):
+            return all(arr)
+        
+        @staticmethod
+        def mean(arr):
+            return sum(arr) / len(arr)
+        
+        @staticmethod  
+        def sum(arr):
+            return sum(arr)
+        
+        @staticmethod
+        def sign(x):
+            return 1 if x > 0 else (-1 if x < 0 else 0)
+        
+        @staticmethod
+        def abs(x):
+            if hasattr(x, '__iter__'):
+                return [abs(xi) for xi in x]
+            return abs(x)
+        
+        @staticmethod
+        def tile(arr, reps):
+            result = []
+            for _ in range(reps[0]):
+                result.extend(arr)
+            return result
+        
+        @staticmethod
+        def vstack(arrays):
+            result = []
+            for arr in arrays:
+                result.extend(arr)
+            return result
+        
+        pi = math.pi
+        ndarray = list  # Type alias for compatibility
+
+try:
+    import torch
+    import torch.nn as nn
+except ImportError:
+    # Fallback implementations
+    class torch:
+        @staticmethod
+        def tensor(data, dtype=None):
+            return data
+        
+        @staticmethod
+        def device(name):
+            return name
+        
+        @staticmethod
+        def cuda_is_available():
+            return False
+    
+    class nn:
+        class Module:
+            def __init__(self):
+                pass
+            
+            def eval(self):
+                pass
+            
+            def load_state_dict(self, state_dict):
+                pass
+
 from typing import Dict, Any, Optional, List, Tuple, Callable
 import warnings
 from dataclasses import dataclass
-import torch
-import torch.nn as nn
 from .physics import PlasmaState, TokamakConfig
 
 

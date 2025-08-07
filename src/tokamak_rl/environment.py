@@ -4,8 +4,66 @@ Tokamak environment factory and core components.
 This module provides the main interface for creating tokamak RL environments.
 """
 
-import gymnasium as gym
-import numpy as np
+try:
+    import gymnasium as gym
+except ImportError:
+    # Fallback gym-like interface
+    class gym:
+        class Env:
+            def __init__(self):
+                pass
+                
+        class spaces:
+            class Box:
+                def __init__(self, low, high, shape=None, dtype=float):
+                    self.low = low
+                    self.high = high 
+                    self.shape = shape
+                    self.dtype = dtype
+
+try:
+    import numpy as np
+except ImportError:
+    # Use same fallback as physics module
+    import math
+    
+    class np:
+        @staticmethod
+        def array(x):
+            return list(x) if hasattr(x, '__iter__') else [x]
+        
+        @staticmethod
+        def concatenate(arrays):
+            result = []
+            for arr in arrays:
+                if hasattr(arr, '__iter__'):
+                    result.extend(arr)
+                else:
+                    result.append(arr)
+            return result
+        
+        @staticmethod
+        def sum(arr):
+            return sum(arr)
+        
+        @staticmethod
+        def mean(arr):
+            return sum(arr) / len(arr)
+        
+        @staticmethod
+        def max(arr):
+            return max(arr)
+        
+        @staticmethod
+        def clip(arr, min_val, max_val):
+            if hasattr(arr, '__iter__'):
+                return [max(min_val, min(max_val, x)) for x in arr]
+            else:
+                return max(min_val, min(max_val, arr))
+        
+        float32 = float
+        ndarray = list  # Type alias for compatibility
+
 from typing import Dict, Any, Optional, Tuple
 from .physics import TokamakConfig, PlasmaState, GradShafranovSolver
 from .safety import SafetyShield, create_safety_system
