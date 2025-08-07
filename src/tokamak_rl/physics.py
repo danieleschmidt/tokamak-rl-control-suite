@@ -5,7 +5,79 @@ This module implements the core physics solver for tokamak plasma equilibrium
 using the Grad-Shafranov equation and related plasma physics calculations.
 """
 
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    # Fallback for environments without numpy
+    print("NumPy not available - using basic Python implementations")
+    import math
+    import random
+    
+    class np:
+        @staticmethod
+        def array(x):
+            return list(x) if hasattr(x, '__iter__') else [x]
+        
+        @staticmethod 
+        def linspace(start, stop, num):
+            step = (stop - start) / (num - 1)
+            return [start + i * step for i in range(num)]
+        
+        @staticmethod
+        def zeros(shape):
+            if isinstance(shape, int):
+                return [0.0] * shape
+            return [[0.0] * shape[1] for _ in range(shape[0])]
+        
+        @staticmethod
+        def ones(shape):
+            if isinstance(shape, int):
+                return [1.0] * shape
+            return [[1.0] * shape[1] for _ in range(shape[0])]
+        
+        @staticmethod
+        def min(arr):
+            return min(arr)
+        
+        @staticmethod
+        def max(arr):
+            return max(arr)
+        
+        @staticmethod
+        def clip(val, min_val, max_val):
+            return max(min_val, min(max_val, val))
+        
+        @staticmethod
+        def trapz(y, x):
+            return sum((y[i] + y[i+1]) * (x[i+1] - x[i]) / 2 for i in range(len(x)-1))
+        
+        @staticmethod
+        def linalg_norm(x):
+            return math.sqrt(sum(xi**2 for xi in x))
+        
+        @staticmethod
+        def concatenate(arrays):
+            result = []
+            for arr in arrays:
+                if hasattr(arr, '__iter__'):
+                    result.extend(arr)
+                else:
+                    result.append(arr)
+            return result
+        
+        @staticmethod
+        def maximum(a, b):
+            if hasattr(a, '__iter__') and hasattr(b, '__iter__'):
+                return [max(ai, bi) for ai, bi in zip(a, b)]
+            elif hasattr(a, '__iter__'):
+                return [max(ai, b) for ai in a]
+            else:
+                return max(a, b)
+        
+        float32 = float
+        pi = math.pi
+        ndarray = list  # Type alias for compatibility
+
 from typing import Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 import warnings
