@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tokamak-rl
+  labels:
+    app: tokamak-rl-control-suite
+    environment: production
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tokamak-rl-config
+  namespace: tokamak-rl
+data:
+  tokamak_config: "ITER"
+  control_frequency: "100"
+  safety_factor: "1.2"
+  log_level: "INFO"
+  enable_monitoring: "true"
+  enable_safety: "true"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tokamak-rl-secrets
+  namespace: tokamak-rl
+type: Opaque
+data:
+  database_url: ""  # Base64 encoded
+  api_key: ""       # Base64 encoded
+  jwt_secret: ""    # Base64 encoded
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tokamak-rl-production
+  namespace: tokamak-rl
+  labels:
+    app: tokamak-rl
+    environment: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: tokamak-rl
+      environment: production
+  template:
+    metadata:
+      labels:
+        app: tokamak-rl
+        environment: production
+    spec:
+      containers:
+      - name: tokamak-rl
+        image: tokamak-rl:production
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 6006
+          name: tensorboard
+        resources:
+          requests:
+            memory: "16Gi"
+            cpu: "8"
+          limits:
+            memory: "16Gi"
+            cpu: "8"
+            nvidia.com/gpu: 1
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: TOKAMAK_CONFIG
+          valueFrom:
+            configMapKeyRef:
+              name: tokamak-rl-config
+              key: tokamak_config
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: tokamak-rl-secrets
+              key: database_url
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: tokamak-rl-data-production
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: tokamak-rl-logs-production
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tokamak-rl-service-production
+  namespace: tokamak-rl
+  labels:
+    app: tokamak-rl
+    environment: production
+spec:
+  selector:
+    app: tokamak-rl
+    environment: production
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  - name: tensorboard
+    port: 6006
+    targetPort: 6006
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tokamak-rl-data-production
+  namespace: tokamak-rl
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tokamak-rl-logs-production
+  namespace: tokamak-rl
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
