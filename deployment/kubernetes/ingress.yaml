@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tokamak-rl-ingress
+  namespace: tokamak-rl
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - tokamak-rl.your-domain.com
+    secretName: tokamak-rl-tls
+  rules:
+  - host: tokamak-rl.your-domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: tokamak-rl-service-production
+            port:
+              number: 80

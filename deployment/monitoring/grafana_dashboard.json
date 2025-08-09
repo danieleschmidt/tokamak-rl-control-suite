@@ -1,0 +1,84 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Tokamak RL Control Suite",
+    "tags": [
+      "tokamak",
+      "rl",
+      "fusion"
+    ],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Plasma Parameters",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "plasma_beta",
+            "legendFormat": "Beta"
+          },
+          {
+            "expr": "plasma_q_min",
+            "legendFormat": "Q-min"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Value",
+            "min": 0
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Control Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "control_reward",
+            "legendFormat": "Reward"
+          },
+          {
+            "expr": "shape_error",
+            "legendFormat": "Shape Error"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "System Health",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "up{job='tokamak-rl'}",
+            "legendFormat": "System Status"
+          }
+        ],
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 8
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s"
+  }
+}

@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  tokamak-rl-dev:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.dev
+    ports:
+      - "8080:8080"
+      - "6006:6006"
+      - "8888:8888"
+    volumes:
+      - ../../:/home/dev/app
+      - dev-data:/home/dev/app/data
+      - dev-logs:/home/dev/app/logs
+    environment:
+      - ENVIRONMENT=development
+      - PYTHONPATH=/home/dev/app/src
+    depends_on:
+      - redis
+      - postgres
+    
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=tokamak_rl
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=dev_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning
+
+volumes:
+  dev-data:
+  dev-logs:
+  redis-data:
+  postgres-data:
+  prometheus-data:
+  grafana-data:

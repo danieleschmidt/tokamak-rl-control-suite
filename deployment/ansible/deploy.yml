@@ -1,0 +1,95 @@
+---
+- name: Deploy Tokamak RL Control Suite
+  hosts: all
+  become: yes
+  vars:
+    app_name: tokamak-rl
+    app_user: tokamak
+    app_directory: /opt/tokamak-rl
+    
+  tasks:
+    - name: Update system packages
+      package:
+        name: "*"
+        state: latest
+        
+    - name: Install required packages
+      package:
+        name:
+          - python3
+          - python3-pip
+          - docker.io
+          - git
+          - curl
+          - htop
+          - vim
+        state: present
+        
+    - name: Create application user
+      user:
+        name: "{{ app_user }}"
+        system: yes
+        shell: /bin/bash
+        home: "{{ app_directory }}"
+        
+    - name: Create application directory
+      file:
+        path: "{{ app_directory }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+        
+    - name: Clone application repository
+      git:
+        repo: https://github.com/your-org/tokamak-rl-control-suite.git
+        dest: "{{ app_directory }}/src"
+        version: main
+      become_user: "{{ app_user }}"
+      
+    - name: Install Python dependencies
+      pip:
+        requirements: "{{ app_directory }}/src/requirements.txt"
+        virtualenv: "{{ app_directory }}/venv"
+      become_user: "{{ app_user }}"
+      
+    - name: Install application
+      pip:
+        name: "{{ app_directory }}/src"
+        virtualenv: "{{ app_directory }}/venv"
+        editable: yes
+      become_user: "{{ app_user }}"
+      
+    - name: Create systemd service
+      template:
+        src: tokamak-rl.service.j2
+        dest: /etc/systemd/system/tokamak-rl.service
+      notify: restart tokamak-rl
+      
+    - name: Enable and start service
+      systemd:
+        name: tokamak-rl
+        enabled: yes
+        state: started
+        daemon_reload: yes
+        
+    - name: Configure firewall
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - '8080'
+        - '6006'
+        - '22'
+        
+    - name: Setup log rotation
+      template:
+        src: tokamak-rl.logrotate.j2
+        dest: /etc/logrotate.d/tokamak-rl
+        
+  handlers:
+    - name: restart tokamak-rl
+      systemd:
+        name: tokamak-rl
+        state: restarted

@@ -1,0 +1,38 @@
+groups:
+  - name: tokamak_rl_alerts
+    rules:
+      - alert: HighResponseTime
+        expr: http_request_duration_seconds{quantile="0.95"} > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "Response time is above 500ms for 5 minutes"
+          
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 10% for 2 minutes"
+          
+      - alert: DisruptionRiskHigh
+        expr: plasma_disruption_risk > 0.8
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "High disruption risk detected"
+          description: "Plasma disruption risk is above 80%"
+          
+      - alert: ControlSystemDown
+        expr: up{job="tokamak-rl"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tokamak RL control system is down"
+          description: "The control system has been down for more than 1 minute"

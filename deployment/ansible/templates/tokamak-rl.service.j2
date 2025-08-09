@@ -1,0 +1,15 @@
+[Unit]
+Description=Tokamak RL Control Suite
+After=network.target
+
+[Service]
+Type=simple
+User={{ app_user }}
+WorkingDirectory={{ app_directory }}
+ExecStart={{ app_directory }}/venv/bin/python -m tokamak_rl.cli serve --host 0.0.0.0 --port 8080
+Restart=always
+RestartSec=10
+Environment=PYTHONPATH={{ app_directory }}/src
+
+[Install]
+WantedBy=multi-user.target
