@@ -6,7 +6,10 @@ and visualization tools for RL training and plasma state analysis.
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 from typing import Dict, Any, Optional, List, Tuple
 import json
 import time

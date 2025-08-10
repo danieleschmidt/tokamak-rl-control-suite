@@ -6,15 +6,23 @@ performance analysis, operational scenario planning, and cost-benefit analysis.
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 from typing import Dict, Any, List, Tuple, Optional, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 import json
 import logging
 from pathlib import Path
-from scipy.optimize import minimize, differential_evolution
-from scipy.signal import savgol_filter
+try:
+    from scipy.optimize import minimize, differential_evolution
+    from scipy.signal import savgol_filter
+except ImportError:
+    minimize = None
+    differential_evolution = None
+    savgol_filter = None
 from .physics import PlasmaState, TokamakConfig
 from .safety import SafetyLimits
 

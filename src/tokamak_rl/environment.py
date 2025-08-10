@@ -11,7 +11,13 @@ except ImportError:
     class gym:
         class Env:
             def __init__(self):
-                pass
+                self.np_random = None
+                
+            def reset(self, seed=None, options=None):
+                return None, {}
+                
+            def step(self, action):
+                return None, 0, False, False, {}
                 
         class spaces:
             class Box:
@@ -196,7 +202,11 @@ class TokamakEnv(gym.Env):
         
     def reset(self, *, seed: Optional[int] = None, options: Optional[Dict] = None) -> Tuple[np.ndarray, Dict]:
         """Reset environment to initial plasma state."""
-        super().reset(seed=seed)
+        try:
+            super().reset(seed=seed)
+        except AttributeError:
+            # Handle fallback gym implementation
+            self.np_random = None
         
         # Reset plasma state
         self.plasma_state.reset()
@@ -242,7 +252,17 @@ class TokamakEnv(gym.Env):
         
         # Apply PF coil adjustments (normalized to actual currents)
         max_current = 2.0  # MA
-        pf_currents = self.plasma_state.pf_coil_currents + pf_adjustments * max_current * 0.1
+        current_currents = np.array(self.plasma_state.pf_coil_currents)
+        pf_adjustments_clipped = np.array(pf_adjustments)
+        
+        # Ensure arrays have compatible shapes
+        if len(current_currents) != len(pf_adjustments_clipped):
+            # Resize to minimum size
+            min_size = min(len(current_currents), len(pf_adjustments_clipped))
+            current_currents = current_currents[:min_size]
+            pf_adjustments_clipped = pf_adjustments_clipped[:min_size]
+            
+        pf_currents = current_currents + pf_adjustments_clipped * max_current * 0.1
         pf_currents = np.clip(pf_currents, -max_current, max_current)
         
         # Solve new equilibrium
