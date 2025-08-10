@@ -57,6 +57,9 @@ except ImportError:
             
             def flatten(self):
                 return self.data
+            
+            def to(self, device):
+                return self
         
         @staticmethod
         def FloatTensor(data):
@@ -66,9 +69,14 @@ except ImportError:
         def cuda_is_available():
             return False
         
-        @staticmethod
+        @staticmethod 
         def device(name):
             return name
+        
+        class cuda:
+            @staticmethod
+            def is_available():
+                return False
         
         @staticmethod
         def save(obj, path):
@@ -77,6 +85,21 @@ except ImportError:
         @staticmethod
         def load(path, map_location=None):
             return {}
+        
+        class no_grad:
+            def __init__(self):
+                pass
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                pass
+        
+        @staticmethod
+        def tanh(x):
+            # Simple tanh approximation for fallback
+            if hasattr(x, '__iter__'):
+                return [max(-1.0, min(1.0, xi)) for xi in x]
+            return max(-1.0, min(1.0, x))
     
     class nn:
         class Module:
@@ -94,6 +117,22 @@ except ImportError:
             
             def state_dict(self):
                 return {}
+            
+            def to(self, device):
+                return self
+            
+            def eval(self):
+                return self
+            
+            def train(self):
+                return self
+            
+            def forward(self, x):
+                # Simple fallback implementation
+                return x if hasattr(x, '__len__') and len(x) > 0 else [0.0] * 8
+            
+            def __call__(self, x):
+                return self.forward(x)
         
         class Linear(Module):
             def __init__(self, in_features, out_features):

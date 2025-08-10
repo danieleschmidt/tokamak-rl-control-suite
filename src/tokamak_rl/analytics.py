@@ -6,7 +6,10 @@ forecasting capabilities using machine learning techniques.
 """
 
 import numpy as np
-import pandas as pd
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
 from typing import Dict, Any, List, Tuple, Optional, Union
 from dataclasses import dataclass
 from enum import Enum
@@ -14,13 +17,28 @@ import pickle
 import json
 import logging
 from pathlib import Path
-from scipy import stats
-from scipy.signal import find_peaks
-from sklearn.ensemble import IsolationForest, RandomForestRegressor
-from sklearn.preprocessing import StandardScaler, RobustScaler
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.cluster import DBSCAN
+try:
+    from scipy import stats
+    from scipy.signal import find_peaks
+except ImportError:
+    stats = None
+    find_peaks = None
+
+try:
+    from sklearn.ensemble import IsolationForest, RandomForestRegressor
+    from sklearn.preprocessing import StandardScaler, RobustScaler
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import mean_squared_error, r2_score
+    from sklearn.cluster import DBSCAN
+except ImportError:
+    IsolationForest = None
+    RandomForestRegressor = None
+    StandardScaler = None
+    RobustScaler = None
+    train_test_split = None
+    mean_squared_error = None
+    r2_score = None
+    DBSCAN = None
 import warnings
 
 from .physics import PlasmaState

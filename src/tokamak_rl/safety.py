@@ -93,6 +93,11 @@ except ImportError:
         @staticmethod
         def cuda_is_available():
             return False
+        
+        class cuda:
+            @staticmethod
+            def is_available():
+                return False
     
     class nn:
         class Module:

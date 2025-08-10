@@ -6,14 +6,34 @@ visualization tools for plasma control and performance monitoring.
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from matplotlib.backends.backend_agg import FigureCanvasAgg
-import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
-import dash
-from dash import dcc, html, Input, Output, State
+try:
+    import matplotlib.pyplot as plt
+    import matplotlib.animation as animation
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+except ImportError:
+    plt = None
+    animation = None
+    FigureCanvasAgg = None
+
+try:
+    import plotly.graph_objects as go
+    import plotly.express as px
+    from plotly.subplots import make_subplots
+except ImportError:
+    go = None
+    px = None
+    make_subplots = None
+
+try:
+    import dash
+    from dash import dcc, html, Input, Output, State
+except ImportError:
+    dash = None
+    dcc = None
+    html = None
+    Input = None
+    Output = None
+    State = None
 import json
 import threading
 import time
@@ -21,7 +41,10 @@ from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass
 from collections import deque
 from pathlib import Path
-import pandas as pd
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
 import logging
 
 from .physics import PlasmaState
@@ -194,8 +217,9 @@ class RealTimePlotter:
                         facecolor='black', edgecolor='none')
 
 
-class WebDashboard:
-    """Web-based dashboard using Plotly and Dash."""
+if dash is not None and go is not None:
+    class WebDashboard:
+        """Web-based dashboard using Plotly and Dash."""
     
     def __init__(self, config: DashboardConfig = None):
         self.config = config or DashboardConfig()
@@ -603,6 +627,21 @@ class WebDashboard:
         self.is_running = False
         if self.server_thread:
             self.server_thread.join(timeout=5)
+
+else:
+    # Fallback class when dependencies are missing
+    class WebDashboard:
+        def __init__(self, config=None):
+            print("Warning: Dashboard dependencies not available. Using fallback implementation.")
+        
+        def add_plasma_data(self, state, info=None):
+            pass
+        
+        def start_server(self):
+            pass
+        
+        def stop_server(self):
+            pass
 
 
 def create_dashboard_system(config: DashboardConfig = None) -> Dict[str, Any]:
