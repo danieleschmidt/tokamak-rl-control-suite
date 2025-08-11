@@ -1,0 +1,19 @@
+============================================================
+TOKAMAK-RL COMPREHENSIVE QUALITY GATE REPORT
+============================================================
+Overall Score: 36.2/100
+Overall Status: ❌ FAILED
+
+SECURITY: 0.0/100 ❌ FAILED
+  Security Issues: 86 found
+    - HIGH: Potential hardcoded secrets vulnerability
+    - HIGH: Potential hardcoded secrets vulnerability
+    - MEDIUM: Potential insecure random vulnerability
+PERFORMANCE: 0.0/100 ❌ FAILED
+  Error: cannot import name 'DependencyFreeTokamakSystem' from 'dependency_free_core' (/root/repo/dependency_free_core.py)
+CODE_QUALITY: 80.8/100 ✅ PASSED
+FUNCTIONALITY: 0.0/100 ❌ FAILED
+COMPLIANCE: 100.0/100 ✅ PASSED
+
+Quality Gate Summary:
+⚠️ QUALITY GATES FAILED - REVIEW AND FIX ISSUES

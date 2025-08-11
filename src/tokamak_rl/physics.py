@@ -74,6 +74,25 @@ except ImportError:
             else:
                 return max(a, b)
         
+        @staticmethod
+        def meshgrid(x, y):
+            """Create coordinate matrices from coordinate vectors."""
+            X = [[xi for xi in x] for _ in y]
+            Y = [[yi for _ in x] for yi in y]
+            return X, Y
+        
+        @staticmethod
+        def sqrt(x):
+            if hasattr(x, '__iter__'):
+                return [math.sqrt(xi) for xi in x]
+            return math.sqrt(x)
+        
+        @staticmethod
+        def exp(x):
+            if hasattr(x, '__iter__'):
+                return [math.exp(xi) for xi in x]
+            return math.exp(x)
+        
         float32 = float
         pi = math.pi
         ndarray = list  # Type alias for compatibility
@@ -267,6 +286,12 @@ class GradShafranovSolver:
         self.z_grid = np.linspace(z_min, z_max, self.nz)
         self.R, self.Z = np.meshgrid(self.r_grid, self.z_grid)
         
+    def compute_equilibrium(self, state: PlasmaState = None) -> PlasmaState:
+        """Compute basic equilibrium for testing."""
+        if state is None:
+            return self.create_default_state()
+        return self.solve_equilibrium(state, [0.0] * 6)
+    
     def solve_equilibrium(self, state: PlasmaState, 
                          pf_currents: np.ndarray) -> PlasmaState:
         """
@@ -331,7 +356,7 @@ class GradShafranovSolver:
         temp_avg = np.trapz(state.temperature_profile, state.psi_profile)
         
         # Simplified beta calculation
-        beta = pressure_avg * temp_avg / (self.config.toroidal_field**2) * 1e-6
+        beta = pressure_avg * temp_avg / (self.config.toroidal_field * self.config.toroidal_field) * 1e-6
         return np.clip(beta, 0.001, 0.1)
         
     def _assess_disruption_risk(self, state: PlasmaState) -> float:

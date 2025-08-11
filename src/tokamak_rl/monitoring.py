@@ -5,7 +5,35 @@ This module provides real-time monitoring, logging, TensorBoard integration,
 and visualization tools for RL training and plasma state analysis.
 """
 
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    # Fallback for environments without numpy
+    print("NumPy not available - using basic Python implementations")
+    import math
+    
+    class np:
+        @staticmethod
+        def array(x):
+            return list(x) if hasattr(x, '__iter__') else [x]
+        
+        @staticmethod
+        def mean(arr):
+            return sum(arr) / len(arr)
+        
+        @staticmethod
+        def std(arr):
+            mean_val = sum(arr) / len(arr)
+            return math.sqrt(sum((x - mean_val)**2 for x in arr) / len(arr))
+        
+        @staticmethod
+        def zeros(shape):
+            if isinstance(shape, int):
+                return [0.0] * shape
+            return [[0.0] * shape[1] for _ in range(shape[0])]
+        
+        float32 = float
+        ndarray = list
 try:
     import matplotlib.pyplot as plt
 except ImportError:
