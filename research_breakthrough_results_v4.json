@@ -1,0 +1,36 @@
+{
+  "research_metrics": {
+    "accuracy_improvement": 0.7480190996941268,
+    "statistical_significance": 0,
+    "robustness_score": 0.8988593547030147,
+    "computational_efficiency": 0.95
+  },
+  "algorithm_rankings": [
+    [
+      "MultiObjective",
+      0.7658774833595487
+    ],
+    [
+      "EnsemblePredictor",
+      0.5898565853486609
+    ],
+    [
+      "Hierarchical",
+      0.5779626115249775
+    ],
+    [
+      "TransferLearning",
+      0.5056964470628461
+    ],
+    [
+      "Baseline",
+      0.4648014374151196
+    ],
+    [
+      "PhysicsInformed",
+      0.017858383665421935
+    ]
+  ],
+  "execution_time": 1.4011099338531494,
+  "timestamp": 1755199145.5656679
+}
