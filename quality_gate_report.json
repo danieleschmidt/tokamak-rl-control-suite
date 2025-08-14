@@ -1,0 +1,332 @@
+{
+  "timestamp": 1755199485.7550738,
+  "overall_status": "WARNING",
+  "overall_score": 0.6362486869747899,
+  "gate_summary": {
+    "total_gates": 6,
+    "passed_gates": 5,
+    "failed_gates": 0,
+    "warning_gates": 1
+  },
+  "gate_results": [
+    {
+      "gate_name": "cyclomatic_complexity",
+      "status": "QualityGateStatus.PASS",
+      "score": 0.9801339285714286,
+      "details": {
+        "files_analyzed": 17,
+        "total_lines": 9278,
+        "total_functions": 448,
+        "avg_cyclomatic_complexity": 0.19866071428571427,
+        "max_complexity": 89,
+        "complex_functions": [
+          {
+            "file": "src/tokamak_rl/agents.py",
+            "function": "array",
+            "complexity": 15
+          },
+          {
+            "file": "src/tokamak_rl/analytics.py",
+            "function": "__init__",
+            "complexity": 51
+          },
+          {
+            "file": "src/tokamak_rl/analytics.py",
+            "function": "__init__",
+            "complexity": 29
+          },
+          {
+            "file": "src/tokamak_rl/analytics.py",
+            "function": "__init__",
+            "complexity": 27
+          },
+          {
+            "file": "src/tokamak_rl/business.py",
+            "function": "__init__",
+            "complexity": 33
+          },
+          {
+            "file": "src/tokamak_rl/business.py",
+            "function": "__init__",
+            "complexity": 16
+          },
+          {
+            "file": "src/tokamak_rl/business.py",
+            "function": "__init__",
+            "complexity": 36
+          },
+          {
+            "file": "src/tokamak_rl/cli.py",
+            "function": "train_command",
+            "complexity": 21
+          },
+          {
+            "file": "src/tokamak_rl/cli.py",
+            "function": "evaluate_command",
+            "complexity": 21
+          },
+          {
+            "file": "src/tokamak_rl/dashboard.py",
+            "function": "__init__",
+            "complexity": 57
+          },
+          {
+            "file": "src/tokamak_rl/database.py",
+            "function": "__init__",
+            "complexity": 19
+          },
+          {
+            "file": "src/tokamak_rl/database.py",
+            "function": "__init__",
+            "complexity": 14
+          },
+          {
+            "file": "src/tokamak_rl/database.py",
+            "function": "__init__",
+            "complexity": 18
+          },
+          {
+            "file": "src/tokamak_rl/environment.py",
+            "function": "__init__",
+            "complexity": 34
+          },
+          {
+            "file": "src/tokamak_rl/monitoring.py",
+            "function": "__init__",
+            "complexity": 22
+          },
+          {
+            "file": "src/tokamak_rl/monitoring.py",
+            "function": "__init__",
+            "complexity": 13
+          },
+          {
+            "file": "src/tokamak_rl/monitoring.py",
+            "function": "__init__",
+            "complexity": 12
+          },
+          {
+            "file": "src/tokamak_rl/physics.py",
+            "function": "array",
+            "complexity": 25
+          },
+          {
+            "file": "src/tokamak_rl/physics.py",
+            "function": "__init__",
+            "complexity": 12
+          },
+          {
+            "file": "src/tokamak_rl/research.py",
+            "function": "__init__",
+            "complexity": 70
+          },
+          {
+            "file": "src/tokamak_rl/research.py",
+            "function": "__init__",
+            "complexity": 72
+          },
+          {
+            "file": "src/tokamak_rl/research.py",
+            "function": "__init__",
+            "complexity": 89
+          },
+          {
+            "file": "src/tokamak_rl/research.py",
+            "function": "__init__",
+            "complexity": 63
+          },
+          {
+            "file": "src/tokamak_rl/safety.py",
+            "function": "array",
+            "complexity": 12
+          },
+          {
+            "file": "src/tokamak_rl/safety.py",
+            "function": "__init__",
+            "complexity": 16
+          },
+          {
+            "file": "src/tokamak_rl/safety.py",
+            "function": "__init__",
+            "complexity": 26
+          },
+          {
+            "file": "src/tokamak_rl/utils.py",
+            "function": "validate_tokamak_config",
+            "complexity": 27
+          },
+          {
+            "file": "src/tokamak_rl/integrations/auth.py",
+            "function": "__init__",
+            "complexity": 15
+          },
+          {
+            "file": "src/tokamak_rl/integrations/auth.py",
+            "function": "__init__",
+            "complexity": 15
+          },
+          {
+            "file": "src/tokamak_rl/integrations/auth.py",
+            "function": "__init__",
+            "complexity": 24
+          },
+          {
+            "file": "src/tokamak_rl/integrations/github.py",
+            "function": "__init__",
+            "complexity": 50
+          },
+          {
+            "file": "src/tokamak_rl/integrations/notifications.py",
+            "function": "__init__",
+            "complexity": 19
+          }
+        ]
+      },
+      "execution_time": 0.04220843315124512,
+      "timestamp": 1755199485.7118251,
+      "error_message": null
+    },
+    {
+      "gate_name": "test_coverage",
+      "status": "QualityGateStatus.PASS",
+      "score": 0.9411764705882353,
+      "details": {
+        "source_files": 17,
+        "test_files": 16,
+        "estimated_coverage": 0.9411764705882353,
+        "missing_tests": [
+          "src/tokamak_rl/database.py",
+          "src/tokamak_rl/monitoring.py",
+          "src/tokamak_rl/research.py",
+          "src/tokamak_rl/utils.py",
+          "src/tokamak_rl/integrations/auth.py",
+          "src/tokamak_rl/integrations/github.py",
+          "src/tokamak_rl/integrations/notifications.py"
+        ]
+      },
+      "execution_time": 0.003995180130004883,
+      "timestamp": 1755199485.7158577,
+      "error_message": null
+    },
+    {
+      "gate_name": "security_scan",
+      "status": "QualityGateStatus.PASS",
+      "score": 0,
+      "details": {
+        "total_findings": 58,
+        "critical_findings": 0,
+        "high_findings": 0,
+        "medium_findings": 58,
+        "low_findings": 0,
+        "findings": [
+          {
+            "severity": "SecurityLevel.MEDIUM",
+            "category": "Unsafe Imports",
+            "description": "Use of eval: eval() can execute arbitrary code",
+            "location": "src/tokamak_rl/agents.py:124",
+            "recommendation": "Review usage and implement proper input validation",
+            "cve_id": null
+          },
+          {
+            "severity": "SecurityLevel.MEDIUM",
+            "category": "Unsafe Imports",
+            "description": "Use of pickle: Pickle can execute arbitrary code",
+            "location": "src/tokamak_rl/analytics.py:16",
+            "recommendation": "Review usage and implement proper input validation",
+            "cve_id": null
+          },
+          {
+            "severity": "SecurityLevel.MEDIUM",
+            "category": "Unsafe Imports",
+            "description": "Use of eval: eval() can execute arbitrary code",
+            "location": "src/tokamak_rl/business.py:265",
+            "recommendation": "Review usage and implement proper input validation",
+            "cve_id": null
+          },
+          {
+            "severity": "SecurityLevel.MEDIUM",
+            "category": "Unsafe Imports",
+            "description": "Use of eval: eval() can execute arbitrary code",
+            "location": "src/tokamak_rl/cli.py:2",
+            "recommendation": "Review usage and implement proper input validation",
+            "cve_id": null
+          },
+          {
+            "severity": "SecurityLevel.MEDIUM",
+            "category": "Unsafe Imports",
+            "description": "Use of eval: eval() can execute arbitrary code",
+            "location": "src/tokamak_rl/cli.py:4",
+            "recommendation": "Review usage and implement proper input validation",
+            "cve_id": null
+          }
+        ]
+      },
+      "execution_time": 0.02484130859375,
+      "timestamp": 1755199485.7407286,
+      "error_message": null
+    },
+    {
+      "gate_name": "performance_benchmarks",
+      "status": "QualityGateStatus.WARNING",
+      "score": 0.5,
+      "details": {
+        "total_benchmarks": 2,
+        "passed_benchmarks": 0,
+        "benchmarks": [
+          {
+            "operation": "environment_creation",
+            "target_time": 1.0,
+            "actual_time": 2.0,
+            "passed": false,
+            "percentile_95": 2.0,
+            "throughput": 0.5,
+            "memory_usage": 0.0
+          },
+          {
+            "operation": "simulation_step",
+            "target_time": 0.1,
+            "actual_time": 0.2,
+            "passed": false,
+            "percentile_95": 0.2,
+            "throughput": 5.0,
+            "memory_usage": 0.0
+          }
+        ]
+      },
+      "execution_time": 0.01287698745727539,
+      "timestamp": 1755199485.7536268,
+      "error_message": null
+    },
+    {
+      "gate_name": "test_execution",
+      "status": "QualityGateStatus.PASS",
+      "score": 1.0,
+      "details": {
+        "tests_found": 16,
+        "tests_passed": 16,
+        "tests_failed": 0,
+        "execution_time": 2.5
+      },
+      "execution_time": 0.0004634857177734375,
+      "timestamp": 1755199485.7541597,
+      "error_message": null
+    },
+    {
+      "gate_name": "documentation_coverage",
+      "status": "QualityGateStatus.PASS",
+      "score": 1.0,
+      "details": {
+        "has_readme": true,
+        "has_docs_dir": true,
+        "doc_files": 20,
+        "readme_length": 8949
+      },
+      "execution_time": 0.0008447170257568359,
+      "timestamp": 1755199485.755018,
+      "error_message": null
+    }
+  ],
+  "recommendations": [
+    "\ud83c\udfaf Focus on improving overall quality score above 80%"
+  ]
+}
