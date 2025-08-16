@@ -1,0 +1,48 @@
+{
+  "overall_passed": true,
+  "overall_score": 0.8186111111111112,
+  "overall_level": "GOOD",
+  "execution_time": 0.6967084407806396,
+  "summary": {
+    "total_gates": 3,
+    "passed_gates": 2,
+    "failed_gates": 1
+  },
+  "gate_results": {
+    "code_quality": {
+      "gate_name": "code_quality",
+      "level": "GOOD",
+      "score": 0.8225000000000001,
+      "passed": true,
+      "execution_time": 0.015330791473388672,
+      "recommendations": [
+        "Code quality is good - consider advanced static analysis tools"
+      ],
+      "error_message": null
+    },
+    "system_integration": {
+      "gate_name": "system_integration",
+      "level": "NEEDS_IMPROVEMENT",
+      "score": 0.6666666666666666,
+      "passed": false,
+      "execution_time": 0.07171249389648438,
+      "recommendations": [
+        "Improve module_imports: Failed to import tokamak_rl: No module named 'numpy', Failed to import tokamak_rl.environment: No module named 'numpy', Failed to import tokamak_rl.physics: No module named 'numpy', Failed to import tokamak_rl.safety: No module named 'numpy', Failed to import tokamak_rl.agents: No module named 'numpy'"
+      ],
+      "error_message": null
+    },
+    "performance": {
+      "gate_name": "performance",
+      "level": "EXCELLENT",
+      "score": 0.9666666666666667,
+      "passed": true,
+      "execution_time": 0.6093845367431641,
+      "recommendations": [
+        "Performance is adequate - consider advanced optimizations"
+      ],
+      "error_message": null
+    }
+  },
+  "timestamp": 1755320817.510745,
+  "version": "5.0-lightweight"
+}

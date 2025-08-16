@@ -1,0 +1,190 @@
+{
+  "deployment_id": "tokamak-deploy-1755320958",
+  "started_at": 1755320958.725768,
+  "stages": [
+    {
+      "stage_name": "Build And Test",
+      "success": true,
+      "duration": 0.601398229598999,
+      "details": {
+        "success": true,
+        "build_time": 125.0,
+        "image_tags": [
+          "tokamak-rl:v5.0.0",
+          "tokamak-rl:latest"
+        ],
+        "test_results": {
+          "unit_tests": "passed",
+          "integration_tests": "passed",
+          "security_scan": "passed",
+          "quality_gates": "passed"
+        }
+      }
+    },
+    {
+      "stage_name": "Deploy To Staging",
+      "success": true,
+      "duration": 0.5013034343719482,
+      "details": {
+        "success": true,
+        "staging_url": "https://tokamak-rl-staging.terragonlabs.io",
+        "deployment_time": 180.0,
+        "services_deployed": 8,
+        "smoke_tests": "passed"
+      }
+    },
+    {
+      "stage_name": "Validation Testing",
+      "success": true,
+      "duration": 0.5012989044189453,
+      "details": {
+        "success": true,
+        "test_duration": 300.0,
+        "tests_passed": 5,
+        "performance_metrics": {
+          "avg_response_time": 45.0,
+          "throughput_rps": 2500,
+          "error_rate": 0.01
+        }
+      }
+    },
+    {
+      "stage_name": "Production Deployment",
+      "success": true,
+      "duration": 0.6025893688201904,
+      "details": {
+        "success": true,
+        "global_deployment": {
+          "deployment_id": "global-tokamak-rl-control-1755320960",
+          "service_name": "tokamak-rl-control",
+          "deployment_plan": {
+            "service_name": "tokamak-rl-control",
+            "deployments": [
+              {
+                "provider": "AWS",
+                "region": "us-east-1",
+                "instance_type": "standard-4cpu-8gb",
+                "instance_count": 5,
+                "estimated_cost_per_hour": 0.5,
+                "expected_latency": 25.0
+              },
+              {
+                "provider": "AWS",
+                "region": "eu-west-1",
+                "instance_type": "standard-4cpu-8gb",
+                "instance_count": 5,
+                "estimated_cost_per_hour": 0.5,
+                "expected_latency": 45.0
+              },
+              {
+                "provider": "AWS",
+                "region": "ap-southeast-1",
+                "instance_type": "standard-4cpu-8gb",
+                "instance_count": 5,
+                "estimated_cost_per_hour": 0.5,
+                "expected_latency": 60.0
+              }
+            ],
+            "total_estimated_cost": 1.5,
+            "estimated_latency": {}
+          },
+          "results": [
+            {
+              "provider": "AWS",
+              "region": "us-east-1",
+              "status": "success",
+              "deployment_id": "deploy-AWS-1755320960",
+              "endpoints": [
+                "https://us-east-1.AWS.com/api"
+              ],
+              "instances": 5,
+              "deployment_time": 155.21732541241857
+            },
+            {
+              "provider": "AWS",
+              "region": "eu-west-1",
+              "status": "success",
+              "deployment_id": "deploy-AWS-1755320960",
+              "endpoints": [
+                "https://eu-west-1.AWS.com/api"
+              ],
+              "instances": 5,
+              "deployment_time": 194.86864106843979
+            },
+            {
+              "provider": "AWS",
+              "region": "ap-southeast-1",
+              "status": "success",
+              "deployment_id": "deploy-AWS-1755320960",
+              "endpoints": [
+                "https://ap-southeast-1.AWS.com/api"
+              ],
+              "instances": 5,
+              "deployment_time": 206.3716193957991
+            }
+          ],
+          "status": "completed"
+        },
+        "regions_deployed": 3,
+        "total_instances": 15
+      }
+    },
+    {
+      "stage_name": "Traffic Routing",
+      "success": true,
+      "duration": 7.200241088867188e-05,
+      "details": {
+        "success": true,
+        "canary_deployment": {
+          "deployment_id": "canary-tokamak-rl-control-1755320960",
+          "status": "started",
+          "config": {
+            "service_name": "tokamak-rl-control",
+            "new_version": "v5.0.0",
+            "traffic_percentage": 5.0,
+            "started_at": 1755320960.9325914,
+            "stages": [
+              {
+                "percentage": 5.0,
+                "duration": 300
+              },
+              {
+                "percentage": 20.0,
+                "duration": 600
+              },
+              {
+                "percentage": 50.0,
+                "duration": 900
+              },
+              {
+                "percentage": 100.0,
+                "duration": 0
+              }
+            ],
+            "current_stage": 0,
+            "health_metrics": {
+              "error_rate_threshold": 0.05,
+              "latency_threshold": 500.0,
+              "success_rate_threshold": 0.95
+            }
+          }
+        },
+        "traffic_routing": "active",
+        "load_balancer": "configured"
+      }
+    },
+    {
+      "stage_name": "Monitoring Setup",
+      "success": true,
+      "duration": 0.0004961490631103516,
+      "details": {
+        "success": true,
+        "monitoring": "active",
+        "auto_healing": "enabled",
+        "alerting": "configured"
+      }
+    }
+  ],
+  "overall_status": "completed",
+  "total_duration": 2.2073957920074463
+}
