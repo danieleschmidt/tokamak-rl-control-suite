@@ -1,0 +1,26 @@
+{
+  "avg_reward": 1022.9184886403157,
+  "reward_std": 52.39861177096649,
+  "final_metrics": {
+    "performance": {
+      "shape_accuracy": 9.40425976054143,
+      "disruption_rate": 0.0,
+      "control_efficiency": 1.0,
+      "safety_margin": 1.1738464013336354
+    },
+    "quantum_coherence": 1.0,
+    "exploration_rate": 0.09752487531218751,
+    "safety_boundaries": {
+      "q_min": 1.2,
+      "density_limit": 0.9,
+      "beta_limit": 0.06,
+      "current_limit": 15.0
+    },
+    "discovered_scenarios": 12,
+    "state_history_length": 2000,
+    "average_disruption_risk": 0.8946799146307628
+  },
+  "episodes_completed": 10,
+  "estimated_accuracy": 0.98,
+  "improvement_percentage": 50.76923076923077
+}

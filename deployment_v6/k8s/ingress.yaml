@@ -1,0 +1,47 @@
+{
+  "apiVersion": "networking.k8s.io/v1",
+  "kind": "Ingress",
+  "metadata": {
+    "name": "tokamak-rl-ingress",
+    "namespace": "tokamak-rl",
+    "annotations": {
+      "kubernetes.io/ingress.class": "nginx",
+      "nginx.ingress.kubernetes.io/rewrite-target": "/",
+      "nginx.ingress.kubernetes.io/ssl-redirect": "true",
+      "nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
+      "cert-manager.io/cluster-issuer": "letsencrypt-prod",
+      "nginx.ingress.kubernetes.io/ssl-protocols": "TLSv1.2 TLSv1.3"
+    }
+  },
+  "spec": {
+    "rules": [
+      {
+        "host": "tokamak-rl.terragonlabs.io",
+        "http": {
+          "paths": [
+            {
+              "path": "/",
+              "pathType": "Prefix",
+              "backend": {
+                "service": {
+                  "name": "tokamak-rl-service",
+                  "port": {
+                    "number": 80
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "tls": [
+      {
+        "hosts": [
+          "tokamak-rl.terragonlabs.io"
+        ],
+        "secretName": "tokamak-rl-tls"
+      }
+    ]
+  }
+}

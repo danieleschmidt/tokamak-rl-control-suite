@@ -1,0 +1,22 @@
+{
+  "version": "3.8",
+  "services": {
+    "tokamak-rl": {
+      "build": {
+        "context": "../../",
+        "dockerfile": "deployment_v6/docker/Dockerfile"
+      },
+      "ports": [
+        "8000:8000"
+      ],
+      "environment": {
+        "TOKAMAK_ENV": "development",
+        "TOKAMAK_LOG_LEVEL": "DEBUG"
+      },
+      "volumes": [
+        "../../data:/app/data",
+        "../../logs:/app/logs"
+      ]
+    }
+  }
+}

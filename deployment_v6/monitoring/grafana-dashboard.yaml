@@ -1,0 +1,14 @@
+{
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "metadata": {
+    "name": "grafana-dashboard",
+    "namespace": "tokamak-rl",
+    "labels": {
+      "grafana_dashboard": "1"
+    }
+  },
+  "data": {
+    "tokamak-rl.json": "{\"dashboard\": {\"id\": null, \"title\": \"Tokamak-RL Production Metrics\", \"tags\": [\"tokamak-rl\", \"production\"], \"timezone\": \"UTC\", \"panels\": [{\"id\": 1, \"title\": \"Request Latency\", \"type\": \"graph\", \"targets\": [{\"expr\": \"histogram_quantile(0.95, tokamak_request_duration_seconds_bucket)\", \"legendFormat\": \"p95 latency\"}]}, {\"id\": 2, \"title\": \"Throughput\", \"type\": \"graph\", \"targets\": [{\"expr\": \"rate(tokamak_requests_total[5m])\", \"legendFormat\": \"Requests/sec\"}]}, {\"id\": 3, \"title\": \"Error Rate\", \"type\": \"graph\", \"targets\": [{\"expr\": \"rate(tokamak_errors_total[5m])\", \"legendFormat\": \"Errors/sec\"}]}, {\"id\": 4, \"title\": \"Plasma Safety Metrics\", \"type\": \"graph\", \"targets\": [{\"expr\": \"tokamak_q_min\", \"legendFormat\": \"q_min\"}, {\"expr\": \"tokamak_disruption_risk\", \"legendFormat\": \"Disruption Risk\"}]}], \"time\": {\"from\": \"now-1h\", \"to\": \"now\"}, \"refresh\": \"5s\"}}"
+  }
+}
