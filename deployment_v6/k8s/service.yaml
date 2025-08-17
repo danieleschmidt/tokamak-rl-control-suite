@@ -1,0 +1,24 @@
+{
+  "apiVersion": "v1",
+  "kind": "Service",
+  "metadata": {
+    "name": "tokamak-rl-service",
+    "namespace": "tokamak-rl",
+    "labels": {
+      "app": "tokamak-rl"
+    }
+  },
+  "spec": {
+    "selector": {
+      "app": "tokamak-rl"
+    },
+    "ports": [
+      {
+        "port": 80,
+        "targetPort": 8000,
+        "protocol": "TCP"
+      }
+    ],
+    "type": "ClusterIP"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "metadata": {
+    "name": "tokamak-rl-config",
+    "namespace": "tokamak-rl"
+  },
+  "data": {
+    "app.yaml": "{\n  \"tokamak_rl\": {\n    \"environment\": \"production\",\n    \"log_level\": \"INFO\",\n    \"metrics\": {\n      \"enabled\": true,\n      \"port\": 8000,\n      \"path\": \"/metrics\"\n    },\n    \"health_check\": {\n      \"enabled\": true,\n      \"timeout\": 30\n    },\n    \"plasma_control\": {\n      \"max_current\": 20.0,\n      \"safety_factor_limit\": 1.5,\n      \"disruption_threshold\": 0.8\n    },\n    \"performance\": {\n      \"batch_size\": 32,\n      \"cache_size\": 10000,\n      \"worker_threads\": 4\n    }\n  }\n}"
+  }
+}

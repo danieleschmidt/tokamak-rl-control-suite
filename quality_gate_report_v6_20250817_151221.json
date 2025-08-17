@@ -1,0 +1,161 @@
+{
+  "overall_status": "FAILED",
+  "overall_score": 69.61091406766107,
+  "gate_results": {
+    "security": {
+      "passed": false,
+      "score": 30,
+      "execution_time_ms": 360.23759841918945,
+      "errors": [
+        "Hardcoded Secrets detected",
+        "Hardcoded Secrets detected",
+        "Unsafe Deserialization detected",
+        "Unsafe Deserialization detected",
+        "Unsafe Deserialization detected"
+      ],
+      "warnings": [
+        "Use of eval() detected in /root/repo/comprehensive_quality_gates_system.py",
+        "Use of exec() detected in /root/repo/comprehensive_quality_gates_system.py",
+        "Use of eval() detected in /root/repo/enhanced_quality_gates_v5.py",
+        "Use of eval() detected in /root/repo/research_breakthrough_v4.py",
+        "Use of exec() detected in /root/repo/test_business.py",
+        "Use of eval() detected in /root/repo/comprehensive_quality_gates_v6.py",
+        "Use of exec() detected in /root/repo/comprehensive_quality_gates_v6.py",
+        "Use of eval() detected in /root/repo/src/tokamak_rl/agents.py",
+        "Use of eval() detected in /root/repo/src/tokamak_rl/quantum_physics.py",
+        "Use of eval() detected in /root/repo/src/tokamak_rl/safety.py",
+        "Use of eval() detected in /root/repo/tests/test_business.py",
+        "Potentially unnecessary executable permission: /root/repo/.terragon/autonomous-agent.py",
+        "Potentially unnecessary executable permission: /root/repo/scripts/automation/dependency_updater.py",
+        "Potentially unnecessary executable permission: /root/repo/scripts/automation/repo_maintenance.py",
+        "Potentially unnecessary executable permission: /root/repo/scripts/metrics/collect_metrics.py"
+      ],
+      "details": {
+        "scanned_files": 92,
+        "vulnerabilities": [
+          {
+            "type": "hardcoded_secrets",
+            "severity": "critical",
+            "file": "/root/repo/robust_error_handling_v6.py",
+            "line": 625,
+            "description": "Hardcoded Secrets detected",
+            "code_snippet": "api_key = \"tokamak_rl_demo_key_2024\""
+          },
+          {
+            "type": "hardcoded_secrets",
+            "severity": "critical",
+            "file": "/root/repo/robust_error_handling_v6.py",
+            "line": 666,
+            "description": "Hardcoded Secrets detected",
+            "code_snippet": "api_key = \"invalid_key\""
+          },
+          {
+            "type": "unsafe_deserialization",
+            "severity": "high",
+            "file": "/root/repo/src/tokamak_rl/database.py",
+            "line": 224,
+            "description": "Unsafe Deserialization detected",
+            "code_snippet": "pickle.loads("
+          },
+          {
+            "type": "unsafe_deserialization",
+            "severity": "high",
+            "file": "/root/repo/src/tokamak_rl/database.py",
+            "line": 225,
+            "description": "Unsafe Deserialization detected",
+            "code_snippet": "pickle.loads("
+          },
+          {
+            "type": "unsafe_deserialization",
+            "severity": "high",
+            "file": "/root/repo/src/tokamak_rl/database.py",
+            "line": 338,
+            "description": "Unsafe Deserialization detected",
+            "code_snippet": "pickle.load("
+          }
+        ],
+        "critical_count": 2,
+        "high_count": 3,
+        "medium_count": 0,
+        "warnings_count": 15
+      }
+    },
+    "performance": {
+      "passed": true,
+      "score": 93.63441944122314,
+      "execution_time_ms": 2012.2971534729004,
+      "errors": [],
+      "warnings": [],
+      "details": {
+        "latency_test": {
+          "passed": true,
+          "score": 99.53767776489258,
+          "avg_latency_ms": 0.23116111755371094,
+          "p99_latency_ms": 0.38691282272338867,
+          "target_ms": 50.0
+        },
+        "throughput_test": {
+          "passed": true,
+          "score": 100,
+          "throughput_ops_sec": 9212206.072778355,
+          "operations": 18424500,
+          "duration_sec": 2.000009536743164,
+          "target_ops_sec": 100.0
+        },
+        "memory_test": {
+          "passed": true,
+          "score": 90.0,
+          "memory_usage_mb": 50.0,
+          "note": "psutil not available - using estimated values"
+        },
+        "cpu_test": {
+          "passed": true,
+          "score": 85.0,
+          "cpu_usage_percent": 65.0,
+          "note": "psutil not available - using estimated values"
+        },
+        "targets": {
+          "latency_ms": 50.0,
+          "throughput_ops_sec": 100.0,
+          "memory_mb": 500.0,
+          "cpu_percent": 80.0
+        }
+      }
+    },
+    "tests": {
+      "passed": false,
+      "score": 81.3014705882353,
+      "execution_time_ms": 1.3916492462158203,
+      "errors": [],
+      "warnings": [],
+      "details": {
+        "total_tests": 272,
+        "passed_tests": 211,
+        "failed_tests": 61,
+        "pass_rate": 77.57352941176471,
+        "coverage": 90.0,
+        "test_files": 16,
+        "test_results": {
+          "total_tests": 272,
+          "passed_tests": 211,
+          "errors": [],
+          "warnings": [],
+          "coverage": 90.0
+        }
+      }
+    }
+  },
+  "summary": {
+    "total_execution_time_ms": 2374.427080154419,
+    "gates_passed": 1,
+    "total_gates": 3,
+    "critical_issues": 5,
+    "warnings": 15
+  },
+  "recommendations": [
+    "\ud83d\udd12 Address security vulnerabilities before deployment",
+    "\ud83d\udea8 CRITICAL: Fix critical security issues immediately",
+    "\ud83e\uddea Improve test coverage and pass rates"
+  ],
+  "timestamp": "2025-08-17T15:12:21.666492"
+}

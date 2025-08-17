@@ -1,0 +1,12 @@
+{
+  "apiVersion": "v1",
+  "kind": "Namespace",
+  "metadata": {
+    "name": "tokamak-rl",
+    "labels": {
+      "app": "tokamak-rl",
+      "environment": "production",
+      "version": "v6.0"
+    }
+  }
+}
