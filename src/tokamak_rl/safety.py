@@ -241,14 +241,27 @@ class DisruptionPredictor:
 
 
 class SafetyShield:
-    """Real-time safety shield for filtering RL actions."""
+    """Advanced real-time safety shield with predictive risk assessment.
+    
+    Features multi-layered safety checks, adaptive constraint management,
+    and emergency response protocols for tokamak plasma control.
+    """
     
     def __init__(self, limits: Optional[SafetyLimits] = None, 
-                 disruption_predictor: Optional[DisruptionPredictor] = None):
+                 disruption_predictor: Optional[DisruptionPredictor] = None,
+                 adaptive_constraints: bool = True, safety_margin_factor: float = 1.2):
         self.limits = limits or SafetyLimits()
         self.predictor = disruption_predictor or DisruptionPredictor()
         self.last_action = None
         self.emergency_mode = False
+        self.adaptive_constraints = adaptive_constraints
+        self.safety_margin_factor = safety_margin_factor
+        
+        # Advanced safety tracking
+        self.violation_history = []
+        self.risk_history = []
+        self.intervention_count = 0
+        self.consecutive_violations = 0
         
     def filter_action(self, proposed_action: np.ndarray, 
                      plasma_state: PlasmaState) -> Tuple[np.ndarray, Dict[str, Any]]:
@@ -277,18 +290,43 @@ class SafetyShield:
         disruption_risk = self.predictor.predict_disruption(plasma_state)
         safety_info['disruption_risk'] = disruption_risk
         
-        # Emergency mode activation
-        if (safety_metrics['q_min'] < 1.2 or 
-            disruption_risk > self.limits.disruption_probability_limit * 2):
+        # Advanced emergency mode activation with predictive assessment
+        risk_threshold = self.limits.disruption_probability_limit
+        if self.adaptive_constraints:
+            # Adjust threshold based on recent history
+            if len(self.risk_history) > 5:
+                recent_risk_trend = np.mean(self.risk_history[-5:]) - np.mean(self.risk_history[-10:-5]) if len(self.risk_history) > 10 else 0
+                if recent_risk_trend > 0.02:  # Rising risk trend
+                    risk_threshold *= 0.7  # Lower threshold
+                    
+        if (safety_metrics['q_min'] < 1.2 * self.safety_margin_factor or 
+            disruption_risk > risk_threshold * 2 or
+            self.consecutive_violations > 3):
             self.emergency_mode = True
             safety_info['emergency_mode'] = True
+            self.intervention_count += 1
+        elif disruption_risk < risk_threshold * 0.5 and safety_metrics['q_min'] > 1.5:
+            # Exit emergency mode if conditions improve
+            self.emergency_mode = False
             
-        # Apply safety constraints
-        safe_action, violations = self._apply_constraints(safe_action, plasma_state, safety_metrics)
+        # Apply enhanced safety constraints with predictive adjustment
+        safe_action, violations = self._apply_constraints(safe_action, plasma_state, safety_metrics, disruption_risk)
         safety_info['violations'] = violations
         
         if len(violations) > 0:
             safety_info['action_modified'] = True
+            self.consecutive_violations += 1
+        else:
+            self.consecutive_violations = 0
+            
+        # Track violation and risk history
+        self.violation_history.append(len(violations))
+        self.risk_history.append(disruption_risk)
+        
+        # Maintain history size
+        if len(self.violation_history) > 100:
+            self.violation_history.pop(0)
+            self.risk_history.pop(0)
             
         # Emergency shutdown if critical violations
         if self.emergency_mode:
@@ -299,7 +337,7 @@ class SafetyShield:
         return safe_action, safety_info
         
     def _apply_constraints(self, action: np.ndarray, plasma_state: PlasmaState,
-                          safety_metrics: Dict[str, float]) -> Tuple[np.ndarray, List[str]]:
+                          safety_metrics: Dict[str, float], disruption_risk: float = 0.0) -> Tuple[np.ndarray, List[str]]:
         """Apply individual safety constraints to action."""
         violations = []
         
@@ -339,22 +377,47 @@ class SafetyShield:
             action[7] = self.limits.heating_power_limit
             violations.append("Heating power limit")
             
-        # Physics-based constraints
-        if safety_metrics['q_min'] < self.limits.q_min_threshold:
-            # Reduce heating and gas puff to increase q
-            action[6] *= 0.5  # Reduce gas puff
-            action[7] *= 0.7  # Reduce heating
-            violations.append("Low q_min safety")
+        # Enhanced physics-based constraints with predictive adjustment
+        q_threshold = self.limits.q_min_threshold * self.safety_margin_factor
+        if self.adaptive_constraints and disruption_risk > 0.05:
+            q_threshold *= 1.1  # Stricter limits under high risk
             
-        if safety_metrics['beta_limit_fraction'] > 0.9:
-            # Reduce heating power if approaching beta limit
-            action[7] *= 0.5
-            violations.append("High beta limit")
+        if safety_metrics['q_min'] < q_threshold:
+            # Progressive response based on severity
+            severity = (q_threshold - safety_metrics['q_min']) / q_threshold
+            action[6] *= max(0.1, 1.0 - severity)  # Reduce gas puff
+            action[7] *= max(0.3, 1.0 - severity * 0.7)  # Reduce heating
+            violations.append(f"Low q_min safety (severity: {severity:.2f})")
             
-        if safety_metrics['density_limit_fraction'] > 0.9:
-            # Stop gas puff if approaching density limit
-            action[6] = 0
-            violations.append("High density limit")
+        beta_threshold = 0.9
+        if self.adaptive_constraints and disruption_risk > 0.03:
+            beta_threshold = 0.8  # More conservative under risk
+            
+        if safety_metrics['beta_limit_fraction'] > beta_threshold:
+            # Graduated response
+            reduction = min(0.8, (safety_metrics['beta_limit_fraction'] - beta_threshold) * 2)
+            action[7] *= (1.0 - reduction)
+            violations.append(f"High beta limit (fraction: {safety_metrics['beta_limit_fraction']:.2f})")
+            
+        density_threshold = 0.9
+        if self.adaptive_constraints and disruption_risk > 0.03:
+            density_threshold = 0.85
+            
+        if safety_metrics['density_limit_fraction'] > density_threshold:
+            # Progressive gas puff reduction
+            if safety_metrics['density_limit_fraction'] > 0.95:
+                action[6] = 0  # Complete shutdown
+            else:
+                action[6] *= max(0.1, 1.0 - (safety_metrics['density_limit_fraction'] - density_threshold) * 2)
+            violations.append(f"High density limit (fraction: {safety_metrics['density_limit_fraction']:.2f})")
+            
+        # Predictive constraint based on disruption risk
+        if disruption_risk > 0.08:
+            # High risk - apply conservative modifications
+            action[:6] *= 0.8  # Reduce PF coil changes
+            action[6] *= 0.5   # Reduce gas puff
+            action[7] *= 0.6   # Reduce heating
+            violations.append(f"High disruption risk mitigation (risk: {disruption_risk:.3f})")
             
         return action, violations
         
@@ -375,10 +438,28 @@ class SafetyShield:
         return emergency_action
         
     def reset(self) -> None:
-        """Reset safety shield state."""
+        """Reset safety shield state and tracking metrics."""
         self.last_action = None
         self.emergency_mode = False
         self.predictor.reset()
+        self.violation_history.clear()
+        self.risk_history.clear()
+        self.intervention_count = 0
+        self.consecutive_violations = 0
+        
+    def get_safety_statistics(self) -> Dict[str, float]:
+        """Get comprehensive safety performance statistics."""
+        if not self.violation_history:
+            return {}
+            
+        return {
+            'total_interventions': self.intervention_count,
+            'violation_rate': np.mean(self.violation_history),
+            'average_risk': np.mean(self.risk_history) if self.risk_history else 0.0,
+            'max_risk': np.max(self.risk_history) if self.risk_history else 0.0,
+            'consecutive_violations': self.consecutive_violations,
+            'emergency_mode_active': self.emergency_mode
+        }
 
 
 class ConstraintManager:

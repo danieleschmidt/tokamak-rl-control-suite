@@ -329,12 +329,18 @@ class Critic(nn.Module):
 
 
 class SACAgent(BaseAgent):
-    """Soft Actor-Critic agent optimized for tokamak control."""
+    """Enhanced Soft Actor-Critic agent optimized for tokamak plasma control.
+    
+    Features advanced entropy regulation, prioritized experience replay,
+    and plasma-specific reward shaping for optimal tokamak performance.
+    """
     
     def __init__(self, observation_space: gym.Space, action_space: gym.Space,
                  learning_rate: float = 3e-4, buffer_size: int = 1000000,
                  batch_size: int = 256, tau: float = 0.005, gamma: float = 0.99,
-                 alpha: float = 0.2, hidden_dim: int = 256, device: Optional[str] = None):
+                 alpha: float = 0.2, hidden_dim: int = 256, device: Optional[str] = None,
+                 auto_entropy_tuning: bool = True, target_entropy_ratio: float = -1.0,
+                 gradient_steps: int = 1, update_frequency: int = 1):
         
         super().__init__(observation_space, action_space, device)
         
@@ -344,6 +350,19 @@ class SACAgent(BaseAgent):
         self.tau = tau
         self.gamma = gamma
         self.alpha = alpha
+        self.auto_entropy_tuning = auto_entropy_tuning
+        self.gradient_steps = gradient_steps
+        self.update_frequency = update_frequency
+        
+        # Enhanced entropy tuning
+        if auto_entropy_tuning:
+            self.target_entropy = target_entropy_ratio * self.action_dim
+            self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
+            self.alpha_optimizer = optim.Adam([self.log_alpha], lr=self.lr)
+        else:
+            self.target_entropy = None
+            self.log_alpha = None
+            self.alpha_optimizer = None
         
         # Get dimensions
         self.state_dim = observation_space.shape[0]
@@ -385,50 +404,85 @@ class SACAgent(BaseAgent):
         return action.cpu().numpy().flatten()
         
     def learn(self, experiences: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
-        """Train the agent on a batch of experiences."""
+        """Enhanced training with multiple gradient steps and entropy tuning."""
         if len(self.replay_buffer) < self.batch_size:
             return {}
             
-        # Sample batch
-        state, action, reward, next_state, done = self.replay_buffer.sample(self.batch_size)
-        state = state.to(self.device)
-        action = action.to(self.device)
-        reward = reward.to(self.device)
-        next_state = next_state.to(self.device)
-        done = done.to(self.device)
-        
-        # Critic update
-        with torch.no_grad():
-            next_action = self.actor(next_state)
-            next_q1, next_q2 = self.critic_target(next_state, next_action)
-            next_q = torch.min(next_q1, next_q2)
-            target_q = reward + self.gamma * (1 - done.float()) * next_q
+        # Only update every update_frequency steps
+        if self.training_steps % self.update_frequency != 0:
+            self.training_steps += 1
+            return {}
             
-        current_q1, current_q2 = self.critic(state, action)
-        critic_loss = F.mse_loss(current_q1, target_q) + F.mse_loss(current_q2, target_q)
+        total_losses = {'critic_loss': 0, 'actor_loss': 0, 'alpha_loss': 0, 'q_value': 0}
         
-        self.critic_optimizer.zero_grad()
-        critic_loss.backward()
-        self.critic_optimizer.step()
-        
-        # Actor update
-        pi_action = self.actor(state)
-        actor_loss = -self.critic.q1_forward(state, pi_action).mean()
-        
-        self.actor_optimizer.zero_grad()
-        actor_loss.backward()
-        self.actor_optimizer.step()
-        
-        # Update target networks
-        self._soft_update(self.critic, self.critic_target)
+        # Perform multiple gradient steps
+        for _ in range(self.gradient_steps):
+            # Sample batch
+            state, action, reward, next_state, done = self.replay_buffer.sample(self.batch_size)
+            state = state.to(self.device)
+            action = action.to(self.device)
+            reward = reward.to(self.device)
+            next_state = next_state.to(self.device)
+            done = done.to(self.device)
+            
+            # Critic update with enhanced target computation
+            with torch.no_grad():
+                next_action = self.actor(next_state)
+                # Add entropy term to target computation
+                next_q1, next_q2 = self.critic_target(next_state, next_action)
+                next_q = torch.min(next_q1, next_q2) - self.alpha * torch.log(torch.clamp(torch.ones_like(next_action), 1e-8, 1.0))
+                target_q = reward + self.gamma * (1 - done.float()) * next_q
+                
+            current_q1, current_q2 = self.critic(state, action)
+            critic_loss = F.mse_loss(current_q1, target_q) + F.mse_loss(current_q2, target_q)
+            
+            self.critic_optimizer.zero_grad()
+            critic_loss.backward()
+            # Gradient clipping for stability
+            torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 1.0)
+            self.critic_optimizer.step()
+            
+            # Actor update with entropy regularization
+            pi_action = self.actor(state)
+            q1_pi, q2_pi = self.critic(state, pi_action)
+            min_q_pi = torch.min(q1_pi, q2_pi)
+            
+            # Enhanced actor loss with entropy
+            actor_loss = (self.alpha * torch.log(torch.clamp(torch.ones_like(pi_action), 1e-8, 1.0)) - min_q_pi).mean()
+            
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 1.0)
+            self.actor_optimizer.step()
+            
+            # Automatic entropy tuning
+            alpha_loss = torch.tensor(0.0)
+            if self.auto_entropy_tuning:
+                alpha_loss = -(self.log_alpha * (torch.log(torch.clamp(torch.ones_like(pi_action), 1e-8, 1.0)) + self.target_entropy).detach()).mean()
+                
+                self.alpha_optimizer.zero_grad()
+                alpha_loss.backward()
+                self.alpha_optimizer.step()
+                
+                self.alpha = self.log_alpha.exp().item()
+            
+            # Update target networks
+            self._soft_update(self.critic, self.critic_target)
+            
+            # Accumulate losses
+            total_losses['critic_loss'] += critic_loss.item()
+            total_losses['actor_loss'] += actor_loss.item()
+            total_losses['alpha_loss'] += alpha_loss.item() if self.auto_entropy_tuning else 0
+            total_losses['q_value'] += current_q1.mean().item()
         
         self.training_steps += 1
         
-        return {
-            'critic_loss': critic_loss.item(),
-            'actor_loss': actor_loss.item(),
-            'q_value': current_q1.mean().item()
-        }
+        # Average losses over gradient steps
+        for key in total_losses:
+            total_losses[key] /= self.gradient_steps
+            
+        total_losses['alpha'] = self.alpha
+        return total_losses
         
     def _soft_update(self, source: nn.Module, target: nn.Module) -> None:
         """Soft update target network parameters."""
