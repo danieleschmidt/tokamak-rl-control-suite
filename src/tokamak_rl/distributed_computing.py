@@ -1,8 +1,8 @@
 """
 Advanced Distributed Computing for Tokamak Control
 
-High-performance distributed computing system with:
-- GPU-accelerated plasma simulation
+High-performance distributed computing system with auto-scaling, load balancing,
+and intelligent resource management for large-scale tokamak control deployments.
 - Edge computing for real-time control
 - Distributed reinforcement learning
 - Cloud-native auto-scaling
