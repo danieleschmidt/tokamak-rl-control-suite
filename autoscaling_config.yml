@@ -1,0 +1,63 @@
+# Auto-scaling Configuration for Tokamak RL Control Suite
+
+autoscaling:
+  enabled: true
+  
+  # Horizontal Pod Autoscaling
+  hpa:
+    min_replicas: 2
+    max_replicas: 10
+    target_cpu_utilization: 70
+    target_memory_utilization: 80
+    
+    # Custom metrics
+    custom_metrics:
+      - name: plasma_control_requests_per_second
+        target_value: 100
+      - name: shape_error_processing_latency
+        target_value: 0.1
+
+  # Vertical Pod Autoscaling
+  vpa:
+    enabled: true
+    update_mode: "Auto"
+    resource_policy:
+      cpu:
+        min: 100m
+        max: 4
+      memory:
+        min: 256Mi
+        max: 8Gi
+
+  # Predictive Scaling
+  predictive:
+    enabled: true
+    look_ahead_hours: 2
+    confidence_threshold: 0.8
+    
+    # Schedule-based scaling
+    schedules:
+      - name: "peak_hours"
+        cron: "0 8 * * MON-FRI"
+        min_replicas: 5
+        max_replicas: 15
+      - name: "off_hours"
+        cron: "0 20 * * *"
+        min_replicas: 2
+        max_replicas: 8
+
+  # Cost Optimization
+  cost:
+    enabled: true
+    max_cost_per_hour: 100
+    prefer_spot_instances: true
+    automatic_downsizing: true
+
+  # Multi-cloud Support
+  clouds:
+    - provider: aws
+      regions: [us-east-1, us-west-2, eu-west-1]
+    - provider: gcp
+      regions: [us-central1, europe-west1]
+    - provider: azure
+      regions: [eastus, westus2, westeurope]

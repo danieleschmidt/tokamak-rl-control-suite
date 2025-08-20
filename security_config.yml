@@ -1,0 +1,40 @@
+# Security Configuration for Tokamak RL Control Suite
+
+security:
+  authentication:
+    enabled: true
+    type: "jwt"
+    secret_key_env: "TOKAMAK_SECRET_KEY"
+    token_expiry: 3600
+
+  authorization:
+    enabled: true
+    roles:
+      - admin
+      - operator
+      - viewer
+
+  encryption:
+    data_at_rest: true
+    data_in_transit: true
+    algorithm: "AES-256"
+
+  network:
+    allowed_origins:
+      - "https://tokamak.company.com"
+      - "https://monitoring.company.com"
+    rate_limiting:
+      enabled: true
+      requests_per_minute: 60
+
+  plasma_safety:
+    emergency_shutdown: true
+    safety_interlocks: true
+    operator_confirmation_required: true
+    max_shape_error_cm: 10.0
+    min_safety_factor: 1.2
+
+  audit:
+    enabled: true
+    log_all_actions: true
+    retention_days: 90
