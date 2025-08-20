@@ -1,0 +1,102 @@
+# Backup and Disaster Recovery Configuration
+
+backup:
+  enabled: true
+  
+  # Database Backups
+  database:
+    type: "postgresql"
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    retention_days: 30
+    retention_monthly: 12
+    retention_yearly: 7
+    encryption: true
+    compression: true
+    
+  # Application Data Backups
+  application_data:
+    paths:
+      - "/app/data"
+      - "/app/logs"
+      - "/app/models"
+    schedule: "0 3 * * *"  # Daily at 3 AM
+    retention_days: 14
+    incremental_backup: true
+    
+  # Configuration Backups
+  configuration:
+    paths:
+      - "/app/config"
+      - "/etc/tokamak"
+    schedule: "0 */6 * * *"  # Every 6 hours
+    retention_days: 7
+    
+  # Storage Locations
+  storage:
+    primary:
+      type: "s3"
+      bucket: "tokamak-backups-primary"
+      region: "us-east-1"
+      encryption: "AES256"
+      
+    secondary:
+      type: "gcs"
+      bucket: "tokamak-backups-secondary"
+      region: "us-central1"
+      encryption: true
+      
+    disaster_recovery:
+      type: "azure_blob"
+      container: "tokamak-dr-backups"
+      region: "west-europe"
+
+# Disaster Recovery
+disaster_recovery:
+  enabled: true
+  
+  # Recovery Time Objectives
+  rto_minutes: 15  # Recovery Time Objective
+  rpo_minutes: 5   # Recovery Point Objective
+  
+  # Failover Scenarios
+  scenarios:
+    - name: "primary_datacenter_failure"
+      trigger: "health_check_failure"
+      action: "failover_to_secondary"
+      notification: ["ops-team@company.com", "management@company.com"]
+      
+    - name: "database_corruption"
+      trigger: "database_integrity_check_failure"
+      action: "restore_from_backup"
+      max_data_loss_minutes: 5
+      
+    - name: "security_incident"
+      trigger: "security_alert"
+      action: "isolate_and_restore_clean_backup"
+      
+  # Automated Recovery
+  automated_recovery:
+    enabled: true
+    max_attempts: 3
+    backoff_minutes: [5, 15, 30]
+    
+  # Testing
+  dr_testing:
+    schedule: "0 10 1 * *"  # Monthly on 1st at 10 AM
+    automated: true
+    report_to: ["ops-team@company.com"]
+
+# Monitoring
+backup_monitoring:
+  enabled: true
+  alerts:
+    backup_failure: true
+    backup_size_anomaly: true
+    retention_policy_violation: true
+    dr_test_failure: true
+  
+  metrics:
+    backup_duration: true
+    backup_size: true
+    restore_time: true
+    success_rate: true

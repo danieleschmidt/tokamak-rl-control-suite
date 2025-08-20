@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  tokamak-rl:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app/src
+      - TOKAMAK_ENV=production
+      - TOKAMAK_LOG_LEVEL=INFO
+    volumes:
+      - tokamak_data:/app/data
+      - tokamak_logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - tokamak_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "python", "-c", "import tokamak_rl; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - tokamak_network
+    command: redis-server --appendonly yes
+
+  monitoring:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    networks:
+      - tokamak_network
+
+volumes:
+  tokamak_data:
+  tokamak_logs:
+  redis_data:
+  prometheus_data:
+
+networks:
+  tokamak_network:
+    driver: bridge

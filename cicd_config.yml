@@ -1,0 +1,116 @@
+# CI/CD Pipeline Configuration for Tokamak RL Control Suite
+
+ci:
+  # Continuous Integration
+  triggers:
+    - push
+    - pull_request
+    - schedule: "0 2 * * *"  # Daily at 2 AM
+  
+  stages:
+    - lint_and_format
+    - unit_tests
+    - integration_tests
+    - security_scan
+    - performance_tests
+    - build_artifacts
+    - deploy_staging
+    
+  # Testing
+  testing:
+    unit_tests:
+      command: "pytest tests/unit/"
+      coverage_threshold: 85
+      
+    integration_tests:
+      command: "pytest tests/integration/"
+      environment: "testing"
+      
+    performance_tests:
+      command: "python -m pytest tests/performance/"
+      baseline_file: "performance_baseline.json"
+      regression_threshold: 10  # percent
+      
+  # Security
+  security:
+    dependency_scan: true
+    code_scan: true
+    container_scan: true
+    secrets_detection: true
+    
+  # Artifacts
+  artifacts:
+    docker_image: true
+    python_wheel: true
+    documentation: true
+    test_reports: true
+
+cd:
+  # Continuous Deployment
+  environments:
+    staging:
+      trigger: "merge_to_develop"
+      approval_required: false
+      auto_rollback: true
+      health_check_timeout: 300
+      
+    production:
+      trigger: "merge_to_main"
+      approval_required: true
+      approvers: ["tech-lead@company.com", "ops-manager@company.com"]
+      deployment_window: "02:00-04:00 UTC"
+      
+  # Deployment Strategies
+  strategies:
+    blue_green:
+      enabled: true
+      health_check_duration: 300
+      traffic_switch_delay: 60
+      
+    canary:
+      enabled: true
+      canary_percentage: 10
+      promotion_intervals: [10, 25, 50, 100]
+      success_criteria:
+        error_rate_threshold: 0.01
+        latency_p99_threshold: 100
+        
+    rolling_update:
+      enabled: true
+      batch_size: "25%"
+      max_unavailable: "10%"
+      
+  # Rollback
+  rollback:
+    automatic:
+      enabled: true
+      triggers:
+        - health_check_failure
+        - error_rate_spike
+        - latency_spike
+      max_wait_time: 300
+      
+    manual:
+      enabled: true
+      one_click_rollback: true
+      
+  # Notifications
+  notifications:
+    deployment_start: ["ops-team@company.com"]
+    deployment_success: ["dev-team@company.com", "ops-team@company.com"]
+    deployment_failure: ["dev-team@company.com", "ops-team@company.com", "on-call@company.com"]
+    rollback_triggered: ["dev-team@company.com", "ops-team@company.com", "management@company.com"]
+
+# Quality Gates
+quality_gates:
+  code_coverage: 85
+  security_vulnerabilities: 0
+  performance_regression: 10
+  documentation_coverage: 70
+  
+# Monitoring Integration
+monitoring:
+  metrics_collection: true
+  alerting_integration: true
+  performance_tracking: true
+  deployment_tracking: true
