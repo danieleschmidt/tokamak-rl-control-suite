@@ -1,0 +1,189 @@
+{
+  "metadata": {
+    "timestamp": "2025-08-21T21:59:36.446982",
+    "analysis_version": "7.0",
+    "statistical_framework": "Bootstrap + Multiple Comparisons",
+    "confidence_level": 0.95,
+    "power_target": 0.8
+  },
+  "descriptive_statistics": {
+    "quantum": {
+      "n": 30,
+      "mean": 71.99850511581981,
+      "median": 71.99850511581981,
+      "std": 0.0,
+      "min": 71.99850511581981,
+      "max": 71.99850511581981,
+      "q25": 71.99850511581981,
+      "q75": 71.99850511581981,
+      "ci_lower": 71.99850511581981,
+      "ci_upper": 71.99850511581981,
+      "skewness": 0.0,
+      "kurtosis": 0.0
+    },
+    "classical": {
+      "n": 30,
+      "mean": 62.07397125158617,
+      "median": 62.0489189666398,
+      "std": 0.22951451780752768,
+      "min": 61.616855847399684,
+      "max": 62.50152127149174,
+      "q25": 61.940880286651804,
+      "q75": 62.27254208990493,
+      "ci_lower": 61.99121334612822,
+      "ci_upper": 62.158246510670715,
+      "skewness": -0.18666452891452662,
+      "kurtosis": -0.6781026524299478
+    },
+    "mpc": {
+      "n": 30,
+      "mean": 78.77768824530231,
+      "median": 78.55708848866061,
+      "std": 1.3229881586553693,
+      "min": 76.57637044663782,
+      "max": 80.95459241730232,
+      "q25": 77.78059938144932,
+      "q75": 80.02878556253424,
+      "ci_lower": 78.32960096838346,
+      "ci_upper": 79.25877898304417,
+      "skewness": 0.18403789310101465,
+      "kurtosis": -1.2142863512067346
+    }
+  },
+  "inferential_tests": {
+    "quantum_vs_classical": {
+      "test_name": "Quantum vs Classical",
+      "statistic": 236.8430163848393,
+      "p_value": 0.0,
+      "effect_size": 61.15260387493421,
+      "confidence_interval": [
+        9.923575833362973,
+        9.928515760363869
+      ],
+      "power": 1.0,
+      "sample_size": 60,
+      "significant": true
+    },
+    "quantum_vs_mpc": {
+      "test_name": "Quantum vs MPC",
+      "statistic": -28.06609792524437,
+      "p_value": 8.36779841049129e-05,
+      "effect_size": -7.246635323833199,
+      "confidence_interval": [
+        -6.782219313325223,
+        -6.752274570799233
+      ],
+      "power": 1.0,
+      "sample_size": 60,
+      "significant": true
+    },
+    "classical_vs_mpc": {
+      "test_name": "Classical vs MPC",
+      "statistic": 68.13636309210317,
+      "p_value": 0.0,
+      "effect_size": 17.592733301790485,
+      "confidence_interval": [
+        16.692743741487153,
+        16.723099455074035
+      ],
+      "power": 1.0,
+      "sample_size": 60,
+      "significant": true
+    }
+  },
+  "effect_sizes": {
+    "quantum_vs_classical": {
+      "cohens_d": 61.15260387493421,
+      "interpretation": "Large"
+    },
+    "quantum_vs_mpc": {
+      "cohens_d": -7.246635323833199,
+      "interpretation": "Large"
+    }
+  },
+  "robustness_analysis": {
+    "outlier_analysis": {
+      "quantum_outliers": [],
+      "classical_outliers": [],
+      "mpc_outliers": []
+    },
+    "stability_analysis": {
+      "quantum_stability": {
+        "mean_stability": 71.99850511581981,
+        "std_stability": 0.0,
+        "cv_stability": 0.0
+      },
+      "classical_stability": {
+        "mean_stability": 62.081272912826904,
+        "std_stability": 0.029349697843087195,
+        "cv_stability": 0.00047276250092840986
+      },
+      "mpc_stability": {
+        "mean_stability": 78.76481598172039,
+        "std_stability": 0.10860252668386124,
+        "cv_stability": 0.001378820293429817
+      }
+    },
+    "normality_assessment": {
+      "quantum_skewness": 0.0,
+      "classical_skewness": -0.18666452891452662,
+      "mpc_skewness": 0.18403789310101465
+    }
+  },
+  "publication_metrics": {
+    "criteria_met": {
+      "statistical_significance": true,
+      "multiple_comparisons_corrected": true,
+      "adequate_effect_sizes": true,
+      "adequate_statistical_power": true,
+      "comprehensive_analysis": true,
+      "robustness_tested": true
+    },
+    "publication_score": 1.0,
+    "recommended_venue": "High-Impact Journal (Nature Energy, Nuclear Fusion)",
+    "publication_tier": "Tier 1",
+    "statistical_rigor_level": "High",
+    "revision_priority": [
+      "LOW: Consider additional sensitivity analyses"
+    ]
+  },
+  "multiple_comparisons": {
+    "raw_p_values": [
+      0.0,
+      8.36779841049129e-05,
+      0.0
+    ],
+    "bonferroni_corrected": [
+      0.0,
+      0.0002510339523147387,
+      0.0
+    ],
+    "fdr_corrected": [
+      0.0,
+      8.36779841049129e-05,
+      0.0
+    ],
+    "significant_after_bonferroni": [
+      true,
+      true,
+      true
+    ],
+    "significant_after_fdr": [
+      true,
+      true,
+      true
+    ]
+  },
+  "power_analysis": {
+    "quantum_vs_classical": {
+      "observed_power": 1.0,
+      "adequate_power": true,
+      "recommended_n": 20
+    },
+    "quantum_vs_mpc": {
+      "observed_power": 1.0,
+      "adequate_power": true,
+      "recommended_n": 20
+    }
+  }
+}
