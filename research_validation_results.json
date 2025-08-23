@@ -1,0 +1,142 @@
+{
+  "validation_timestamp": 1755930144.5463533,
+  "studies": [
+    {
+      "study_name": "Quantum-Enhanced vs Classical Control",
+      "algorithms": [
+        "classical_pid",
+        "quantum_sac"
+      ],
+      "metrics": {
+        "shape_error": [
+          4.86135655055559,
+          3.4863033210391903
+        ]
+      },
+      "statistical_significance": {
+        "shape_error": {
+          "classical_pid_vs_quantum_sac": 0.0
+        }
+      },
+      "effect_sizes": {
+        "shape_error": {
+          "classical_pid_vs_quantum_sac": 1.429963455934155
+        }
+      },
+      "confidence_intervals": {
+        "shape_error": {
+          "classical_pid": [
+            4.603815966256619,
+            5.118897134854562
+          ],
+          "quantum_sac": [
+            3.336374537909919,
+            3.6362321041684615
+          ]
+        }
+      },
+      "sample_size": 80,
+      "study_metadata": {}
+    },
+    {
+      "study_name": "Disruption Prediction Algorithms",
+      "algorithms": [
+        "physics_based",
+        "ml_ensemble",
+        "hybrid_approach"
+      ],
+      "metrics": {
+        "prediction_accuracy": [
+          0.7666666666666667,
+          0.8666666666666667,
+          0.8166666666666667
+        ]
+      },
+      "statistical_significance": {
+        "prediction_accuracy": {
+          "physics_based_vs_ml_ensemble": 0.15690814973170397,
+          "physics_based_vs_hybrid_approach": 0.5028773748719797,
+          "ml_ensemble_vs_hybrid_approach": 0.4558679229062035
+        }
+      },
+      "effect_sizes": {
+        "prediction_accuracy": {
+          "physics_based_vs_ml_ensemble": -0.2584423588156335,
+          "physics_based_vs_hybrid_approach": -0.12231909546676362,
+          "ml_ensemble_vs_hybrid_approach": 0.13613974957231484
+        }
+      },
+      "confidence_intervals": {
+        "prediction_accuracy": {
+          "physics_based": [
+            0.6587417433300583,
+            0.8745915900032751
+          ],
+          "ml_ensemble": [
+            0.7799254557875037,
+            0.9534078775458297
+          ],
+          "hybrid_approach": [
+            0.7179311966874588,
+            0.9154021366458746
+          ]
+        }
+      },
+      "sample_size": 60,
+      "study_metadata": {}
+    },
+    {
+      "study_name": "MHD Stability Analysis Methods",
+      "algorithms": [
+        "traditional_eigenmode",
+        "ml_enhanced",
+        "multi_scale_physics"
+      ],
+      "metrics": {
+        "stability_prediction_accuracy": [
+          0.8,
+          0.8333333333333334,
+          0.8888888888888888
+        ]
+      },
+      "statistical_significance": {
+        "stability_prediction_accuracy": {
+          "traditional_eigenmode_vs_ml_enhanced": 0.5651560553762578,
+          "traditional_eigenmode_vs_multi_scale_physics": 0.09924979963554792,
+          "ml_enhanced_vs_multi_scale_physics": 0.28232909633119796
+        }
+      },
+      "effect_sizes": {
+        "stability_prediction_accuracy": {
+          "traditional_eigenmode_vs_ml_enhanced": -0.085745750602498,
+          "traditional_eigenmode_vs_multi_scale_physics": -0.24574409688438056,
+          "ml_enhanced_vs_multi_scale_physics": -0.16026673293427307
+        }
+      },
+      "confidence_intervals": {
+        "stability_prediction_accuracy": {
+          "traditional_eigenmode": [
+            0.7168961662075014,
+            0.8831038337924987
+          ],
+          "ml_enhanced": [
+            0.7559059076871371,
+            0.9107607589795297
+          ],
+          "multi_scale_physics": [
+            0.8235963506474716,
+            0.9541814271303061
+          ]
+        }
+      },
+      "sample_size": 90,
+      "study_metadata": {}
+    }
+  ],
+  "total_experiments": 610,
+  "summary_statistics": {
+    "studies_conducted": 3,
+    "total_algorithms_tested": 8,
+    "statistically_significant_findings": 1
+  }
+}
