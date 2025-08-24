@@ -1,0 +1,35 @@
+{
+  "generation": "1-enhanced",
+  "quantum_breakthrough": true,
+  "timestamp": 1755993237.789789,
+  "performance_metrics": {
+    "high_performance_rate": 0.0,
+    "avg_shape_error": 2.1921143553261633,
+    "avg_quantum_coherence": 0.8107981595546886,
+    "total_fusion_yield": 0.0,
+    "avg_reward": 48.31536580784134,
+    "reward_std": 6.465876783273978,
+    "experiment_duration": 0.015386581420898438,
+    "steps_per_second": 9748.754183711417
+  },
+  "breakthrough_validation": {
+    "shape_error_improvement": 0.5433095093070494,
+    "target_improvement": 0.65,
+    "breakthrough_achieved": false,
+    "quantum_coherence_avg": 0.8107981595546886,
+    "high_performance_achieved": false
+  },
+  "statistical_analysis": {
+    "sample_size": 150,
+    "improvement_significance_score": 1.0291187992066224,
+    "statistically_significant": false,
+    "confidence_interval_lower": -0.4914462827966112,
+    "confidence_interval_upper": 1.5780653014107098
+  },
+  "success_criteria": {
+    "high_performance_rate": false,
+    "shape_error_target": true,
+    "quantum_coherence": true,
+    "breakthrough_improvement": false
+  }
+}

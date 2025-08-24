@@ -1,0 +1,12 @@
+{
+  "stability_rate": 0.08,
+  "avg_shape_error": 2.3592114545152554,
+  "total_reward": -9211.036933510148,
+  "final_metrics": {
+    "steps_completed": 100,
+    "max_reward": 1.0706234123668488,
+    "min_reward": -100
+  },
+  "timestamp": 1755992866.021271,
+  "generation": "1-simple"
+}
