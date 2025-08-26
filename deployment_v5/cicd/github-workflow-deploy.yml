@@ -1,4 +1,7 @@
 # GitHub Actions CI/CD Pipeline
+# NOTE: This file should be manually moved to .github/workflows/deploy.yml
+# due to GitHub App permission restrictions
+
 name: Tokamak RL Production Deployment
 
 on:
@@ -69,6 +72,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
+        file: deployment_v5/docker/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
@@ -84,7 +88,7 @@ jobs:
     - name: Deploy to Kubernetes
       run: |
         echo "Deploying to production cluster..."
-        # kubectl apply -f deployment/kubernetes/
+        # kubectl apply -f deployment_v5/kubernetes/
         
     - name: Run smoke tests
       run: |
