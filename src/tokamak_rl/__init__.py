@@ -17,6 +17,13 @@ from tokamak_rl.business import create_business_system, PlasmaOptimizer, Scenari
 from tokamak_rl.analytics import create_analytics_system, AnomalyDetector, PerformancePredictor, TrendAnalyzer
 from tokamak_rl.dashboard import create_dashboard_system, WebDashboard, RealTimePlotter
 from tokamak_rl.database import create_data_repository, ExperimentDatabase
+from tokamak_rl.advanced_shape_control import (
+    create_advanced_shape_control_system, 
+    PlasmaShapeControlSuite,
+    EnhancedTokamakWrapper,
+    PlasmaTarget,
+    ControlLimits
+)
 
 __all__ = [
     "make_tokamak_env",
@@ -42,5 +49,10 @@ __all__ = [
     "RealTimePlotter",
     "create_data_repository",
     "ExperimentDatabase",
+    "create_advanced_shape_control_system",
+    "PlasmaShapeControlSuite",
+    "EnhancedTokamakWrapper",
+    "PlasmaTarget",
+    "ControlLimits",
     "__version__"
 ]
