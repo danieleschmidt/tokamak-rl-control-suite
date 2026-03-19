@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: tokamak-rl-production
-  labels:
-    name: tokamak-rl-production
